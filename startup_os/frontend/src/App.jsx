@@ -1,0 +1,176 @@
+import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import { supabase } from './lib/supabase';
+import Login from './pages/Login';
+import SettingsPage from './pages/Settings';
+import AgencyHQ from './pages/AgencyHQ';
+import CRM from './pages/CRM';
+import Engineering from './pages/Engineering';
+import Invoices from './pages/Invoices';
+import Analytics from './pages/Analytics';
+import ExecutiveDashboard from './pages/ExecutiveDashboard';
+import Tasks from './pages/Tasks';
+import Reminders from './pages/Reminders';
+import CalendarView from './pages/CalendarView';
+import Payments from './pages/Payments';
+import Expenses from './pages/Expenses';
+import Profitability from './pages/Profitability';
+import Leads from './pages/Leads';
+import Equity from './pages/Equity';
+import Capital from './pages/Capital';
+import Inventory from './pages/Inventory';
+import Engagements from './pages/Engagements';
+import Payroll from './pages/Payroll';
+
+import { 
+  Target, Users, Server, DollarSign, BarChart2, LayoutDashboard, 
+  Sun, Moon, Users2, FileText, CreditCard, Receipt, 
+  PieChart, Briefcase, CheckSquare, Calendar, Bell, 
+  Landmark, PackageOpen, Settings, LogOut 
+} from 'lucide-react';
+
+// Placeholder components for the new granular routes
+const Placeholder = ({ title }) => (
+  <div style={{ padding: '2rem' }}>
+    <h1>{title}</h1>
+    <p style={{ color: 'var(--text-secondary)' }}>This module is currently being scaffolded.</p>
+  </div>
+);
+
+function App() {
+  const [theme, setTheme] = useState('dark');
+  const [session, setSession] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    document.body.className = theme;
+  }, [theme]);
+
+  useEffect(() => {
+    // Check active sessions and sets the user
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsInitializing(false);
+    });
+
+    // Listen for changes on auth state (log in, log out, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (isInitializing) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-primary)' }}><div className="loader">Authenticating...</div></div>;
+  }
+
+  if (!session) {
+    return <Login />;
+  }
+
+  return (
+    <Router>
+      <div className="app-container">
+        
+        {/* Granular Sidebar */}
+        <aside className="sidebar">
+          <h1>
+            Startup OS
+            <button onClick={toggleTheme} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex' }}>
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+          </h1>
+          
+          <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: '1rem', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
+            Executive
+          </div>
+          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><LayoutDashboard size={18} /> CFO Dashboard</NavLink>
+          <NavLink to="/hq" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Target size={18} /> Command Center</NavLink>
+
+          <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
+            CRM & Sales
+          </div>
+          <NavLink to="/clients" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Users size={18} /> Clients</NavLink>
+          <NavLink to="/leads" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Users2 size={18} /> Possible Clients</NavLink>
+          <NavLink to="/engagements" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Settings size={18} /> Engagements</NavLink>
+
+          <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
+            Finance & Metrics
+          </div>
+          <NavLink to="/invoices" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><FileText size={18} /> Invoices</NavLink>
+          <NavLink to="/payments" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><CreditCard size={18} /> Payments</NavLink>
+          <NavLink to="/expenses" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Receipt size={18} /> Expenses</NavLink>
+          <NavLink to="/reports" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><BarChart2 size={18} /> Monthly Report</NavLink>
+          <NavLink to="/profitability" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><PieChart size={18} /> Client Profitability</NavLink>
+          <NavLink to="/payroll" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Users size={18} /> Payroll & Dividends</NavLink>
+          <NavLink to="/equity" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Briefcase size={18} /> Business Equity</NavLink>
+          <NavLink to="/capital" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Landmark size={18} /> Capital</NavLink>
+
+          <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginTop: '1.5rem', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
+            Operations
+          </div>
+          <NavLink to="/tasks" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><CheckSquare size={18} /> Tasks</NavLink>
+          <NavLink to="/calendar" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Calendar size={18} /> Calendar</NavLink>
+          <NavLink to="/reminders" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Bell size={18} /> Reminders</NavLink>
+          <NavLink to="/inventory" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><PackageOpen size={18} /> Inventory</NavLink>
+
+          <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+            <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
+              System
+            </div>
+            <NavLink to="/settings" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Settings size={18} /> Settings</NavLink>
+            <button 
+              onClick={handleLogout} 
+              className="nav-link" 
+              style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', color: '#ef4444' }}
+            >
+              <LogOut size={18} /> Logout
+            </button>
+          </div>
+
+        </aside>
+
+        <main className="main-content">
+          <Routes>
+            <Route path="/dashboard" element={<ExecutiveDashboard />} />
+            <Route path="/hq" element={<AgencyHQ />} />
+            
+            {/* Direct mapped pages for now. We will replace these with true granular components as we build them out */}
+            <Route path="/clients" element={<CRM />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/engagements" element={<Engagements />} />
+            
+            <Route path="/invoices" element={<Invoices />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/reports" element={<Analytics />} />
+            <Route path="/profitability" element={<Profitability />} />
+            <Route path="/payroll" element={<Payroll />} />
+            <Route path="/equity" element={<Equity />} />
+            <Route path="/capital" element={<Capital />} />
+            
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/calendar" element={<CalendarView />} />
+            <Route path="/reminders" element={<Reminders />} />
+            <Route path="/inventory" element={<Inventory />} />
+            
+            <Route path="/settings" element={<SettingsPage />} />
+
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
