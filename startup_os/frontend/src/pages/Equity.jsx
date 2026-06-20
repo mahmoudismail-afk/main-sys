@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Briefcase, PlusCircle, Pencil, Landmark, ShieldAlert, ArrowRightCircle, Download } from 'lucide-react';
+import { Briefcase, PlusCircle, Pencil, Landmark, ShieldAlert, ArrowRightCircle, Download, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Equity() {
@@ -32,6 +32,7 @@ export default function Equity() {
         { data: payData },
         { data: divData },
         { data: capData },
+        { data: paymentsData },
         { data: setData, error: setError }
       ] = await Promise.all([
         supabase.from('business_equity').select('*').order('equity_percentage', { ascending: false }),
@@ -39,12 +40,14 @@ export default function Equity() {
         supabase.from('payroll').select('amount'),
         supabase.from('dividends').select('*'),
         supabase.from('funding_milestones').select('raised_amount'),
+        supabase.from('payments').select('amount'),
         supabase.from('company_settings').select('*').eq('key', 'min_cash_buffer').single()
       ]);
 
       const exp = expData?.reduce((s, x) => s + Number(x.amount || 0), 0) || 0;
       const pay = payData?.reduce((s, x) => s + Number(x.amount || 0), 0) || 0;
       const cap = capData?.reduce((s, x) => s + Number(x.raised_amount || 0), 0) || 0;
+      const collectedRevenue = paymentsData?.reduce((s, x) => s + Number(x.amount || 0), 0) || 0;
 
       let totalPayouts = 0;
       let totalAllocations = 0;
@@ -66,8 +69,8 @@ export default function Equity() {
 
       const unpaidWallets = totalAllocations - totalPayouts;
       
-      // Actual cash in bank = Capital - All Operating Expenses - Payouts
-      const bankCash = cap - exp - pay - totalPayouts;
+      // Actual cash in bank = Capital + Revenue - All Operating Expenses - Payouts
+      const bankCash = cap + collectedRevenue - exp - pay - totalPayouts;
 
       setEquity(eqData || []);
       setActualBankCash(bankCash);
@@ -187,6 +190,13 @@ export default function Equity() {
     setIsWithdrawModalOpen(true);
   };
 
+  const handleDeleteStakeholder = async (id) => {
+    if (!window.confirm("Are you sure you want to completely remove this stakeholder from the Cap Table?")) return;
+    const { error } = await supabase.from('business_equity').delete().eq('id', id);
+    if (error) alert(`Error deleting stakeholder: ${error.message}`);
+    else fetchData();
+  };
+
   const getStakeholderWalletBalance = (id) => {
     if (!walletBalances[id]) return 0;
     return walletBalances[id].allocations - walletBalances[id].payouts;
@@ -224,7 +234,7 @@ export default function Equity() {
                 <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                   ${actualBankCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Capital - All Expenses & Payouts</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Capital + Collected Revenue - All Expenses & Payouts</p>
               </div>
 
               <div>
@@ -304,6 +314,9 @@ export default function Equity() {
                             </button>
                             <button onClick={() => handleEditStakeholder(eq)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                               <Pencil size={16} />
+                            </button>
+                            <button onClick={() => handleDeleteStakeholder(eq.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </td>

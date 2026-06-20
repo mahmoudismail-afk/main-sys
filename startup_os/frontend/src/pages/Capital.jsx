@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Landmark, PlusCircle } from 'lucide-react';
+import { Landmark, PlusCircle, Edit2, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Capital() {
@@ -9,6 +9,7 @@ export default function Capital() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddCapitalModalOpen, setIsAddCapitalModalOpen] = useState(false);
   const [addCapitalItem, setAddCapitalItem] = useState(null);
+  const [editItem, setEditItem] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -38,12 +39,22 @@ export default function Capital() {
       status: formData.get('status') || 'active'
     };
 
-    const { error } = await supabase.from('funding_milestones').insert([payload]);
-    if (error) {
-      alert(`Error saving milestone: ${error.message}`);
+    if (editItem) {
+      const { error } = await supabase.from('funding_milestones').update(payload).eq('id', editItem.id);
+      if (error) {
+        alert(`Error updating milestone: ${error.message}`);
+      } else {
+        setIsModalOpen(false);
+        fetchData();
+      }
     } else {
-      setIsModalOpen(false);
-      fetchData();
+      const { error } = await supabase.from('funding_milestones').insert([payload]);
+      if (error) {
+        alert(`Error saving milestone: ${error.message}`);
+      } else {
+        setIsModalOpen(false);
+        fetchData();
+      }
     }
   };
 
@@ -72,6 +83,17 @@ export default function Capital() {
     setIsAddCapitalModalOpen(true);
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this funding milestone? This cannot be undone.")) return;
+    
+    const { error } = await supabase.from('funding_milestones').delete().eq('id', id);
+    if (error) {
+      alert(`Error deleting milestone: ${error.message}`);
+    } else {
+      fetchData();
+    }
+  };
+
   const calculateProgress = (raised, target) => {
     if (!target) return 0;
     const pct = (Number(raised) / Number(target)) * 100;
@@ -85,7 +107,7 @@ export default function Capital() {
           <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Capital & Funding</h1>
           <p style={{ color: 'var(--text-secondary)' }}>Track investment rounds, raised capital, and runway goals.</p>
         </div>
-        <button className="primary-btn" onClick={() => setIsModalOpen(true)}><PlusCircle size={16} style={{ display: 'inline', marginRight: '0.5rem' }}/> Add Funding Goal</button>
+        <button className="primary-btn" onClick={() => { setEditItem(null); setIsModalOpen(true); }}><PlusCircle size={16} style={{ display: 'inline', marginRight: '0.5rem' }}/> Add Funding Goal</button>
       </div>
 
       {loading ? <div className="loader">Loading Capital...</div> : (
@@ -99,7 +121,15 @@ export default function Capital() {
                     <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Landmark size={18} color="var(--accent-primary)" /> {m.title}
                     </h3>
-                    <span className={`badge ${m.status === 'completed' ? 'completed' : 'pending'}`}>{m.status}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <span className={`badge ${m.status === 'completed' ? 'completed' : 'pending'}`}>{m.status}</span>
+                      <button onClick={() => { setEditItem(m); setIsModalOpen(true); }} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="Edit Goal">
+                        <Edit2 size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(m.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Delete Goal">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                   
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
@@ -128,29 +158,29 @@ export default function Capital() {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Funding Milestone">
-        <form onSubmit={handleSubmit}>
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editItem ? "Edit Funding Milestone" : "Add Funding Milestone"}>
+        <form onSubmit={handleSubmit} key={editItem ? editItem.id : 'new'}>
           <div className="form-group">
             <label>Round Name / Goal Title</label>
-            <input name="title" required className="form-input" placeholder="E.g., Seed Round, Q3 Cash Reserve" />
+            <input name="title" required className="form-input" placeholder="E.g., Seed Round, Q3 Cash Reserve" defaultValue={editItem?.title || ''} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label>Target Amount ($)</label>
-              <input name="target_amount" type="number" required className="form-input" placeholder="1000000" />
+              <input name="target_amount" type="number" required className="form-input" placeholder="1000000" defaultValue={editItem?.target_amount || ''} />
             </div>
             <div className="form-group">
               <label>Amount Already Raised ($)</label>
-              <input name="raised_amount" type="number" className="form-input" defaultValue="0" />
+              <input name="raised_amount" type="number" className="form-input" defaultValue={editItem?.raised_amount || "0"} />
             </div>
           </div>
           <div className="form-group">
             <label>Target Close Date</label>
-            <input name="target_date" type="date" required className="form-input" />
+            <input name="target_date" type="date" required className="form-input" defaultValue={editItem?.target_date ? editItem.target_date.split('T')[0] : ''} />
           </div>
           <div className="form-group">
             <label>Status</label>
-            <select name="status" className="form-select">
+            <select name="status" className="form-select" defaultValue={editItem?.status || 'active'}>
               <option value="planning">Planning</option>
               <option value="active">Active Fundraising</option>
               <option value="completed">Completed / Closed</option>
@@ -158,7 +188,7 @@ export default function Capital() {
           </div>
           <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
-            <button type="submit" className="primary-btn">Save Milestone</button>
+            <button type="submit" className="primary-btn">{editItem ? "Update Milestone" : "Save Milestone"}</button>
           </div>
         </form>
       </Modal>
