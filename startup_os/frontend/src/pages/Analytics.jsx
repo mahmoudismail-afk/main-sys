@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, Clock, AlertTriangle, BarChart2, PieChart as PieIcon, Briefcase, Percent, DollarSign, Target } from 'lucide-react';
+import { TrendingUp, Clock, AlertTriangle, BarChart2, PieChart as PieIcon, Briefcase, Percent, DollarSign, Target, Activity } from 'lucide-react';
 
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState('6months');
@@ -12,8 +12,10 @@ export default function Analytics() {
   const [expenseBreakdown, setExpenseBreakdown] = useState([]);
   const [leadPipeline, setLeadPipeline] = useState([]);
   const [invoiceStatus, setInvoiceStatus] = useState([]);
+  const [debtAging, setDebtAging] = useState([]);
+  const [clientRevenue, setClientRevenue] = useState([]);
   const [debtTotal, setDebtTotal] = useState(0);
-  const [advancedMetrics, setAdvancedMetrics] = useState({ collectionRate: 0, avgDealSize: 0, projectedRevenue: 0 });
+  const [advancedMetrics, setAdvancedMetrics] = useState({ collectionRate: 0, avgDealSize: 0, projectedRevenue: 0, conversionRate: 0, operatingRatio: 0 });
   const [loading, setLoading] = useState(true);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -79,9 +81,13 @@ export default function Analytics() {
       let totalInvoicedAmount = 0;
       let totalPaidInvoiceAmount = 0;
       let totalPaidCount = 0;
+      let totalExpensesAmount = 0;
       const engMap = {};
       const expMap = {};
       const invStatusMap = { paid: 0, sent: 0, overdue: 0, draft: 0 };
+      const agingMap = { '< 30 Days': 0, '30-60 Days': 0, '60-90 Days': 0, '90+ Days': 0 };
+
+      const now = new Date();
 
       (invoices || []).forEach(inv => {
         invStatusMap[inv.status] = (invStatusMap[inv.status] || 0) + Number(inv.amount);
@@ -89,6 +95,16 @@ export default function Analytics() {
 
         if (inv.status !== 'paid') {
           totalUnpaid += Number(inv.amount);
+          
+          const invDate = new Date(inv.created_at);
+          const diffTime = Math.abs(now - invDate);
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays <= 30) agingMap['< 30 Days'] += Number(inv.amount);
+          else if (diffDays <= 60) agingMap['30-60 Days'] += Number(inv.amount);
+          else if (diffDays <= 90) agingMap['60-90 Days'] += Number(inv.amount);
+          else agingMap['90+ Days'] += Number(inv.amount);
+          
         } else {
           totalPaidInvoiceAmount += Number(inv.amount);
           totalPaidCount++;
@@ -112,6 +128,7 @@ export default function Analytics() {
           trendMap[key].expenses += Number(exp.amount);
         }
         expMap[exp.category] = (expMap[exp.category] || 0) + Number(exp.amount);
+        totalExpensesAmount += Number(exp.amount);
       });
 
       (payroll || []).forEach(p => {
@@ -121,6 +138,7 @@ export default function Analytics() {
           trendMap[key].expenses += Number(p.amount);
         }
         expMap['Payroll'] = (expMap['Payroll'] || 0) + Number(p.amount);
+        totalExpensesAmount += Number(p.amount);
       });
 
       // Calculate margins
@@ -137,6 +155,17 @@ export default function Analytics() {
           .sort((a, b) => b.revenue - a.revenue)
           .slice(0, 5)
       );
+
+      setClientRevenue(
+        Object.keys(engMap).map(name => ({ name, value: engMap[name] })).sort((a, b) => b.value - a.value).slice(0, 7)
+      );
+
+      setDebtAging([
+        { name: '< 30 Days', value: agingMap['< 30 Days'] },
+        { name: '30-60 Days', value: agingMap['30-60 Days'] },
+        { name: '60-90 Days', value: agingMap['60-90 Days'] },
+        { name: '90+ Days', value: agingMap['90+ Days'] }
+      ]);
 
       setExpenseBreakdown(
         Object.keys(expMap).map(category => ({ name: category, value: expMap[category] }))
@@ -156,10 +185,15 @@ export default function Analytics() {
         Object.keys(leadStageMap).map(stage => ({ name: stage, value: leadStageMap[stage] }))
       );
 
+      const totalLeads = leads?.length || 0;
+      const wonLeads = leads?.filter(l => l.stage === 'won').length || 0;
+
       setAdvancedMetrics({
         collectionRate: totalInvoicedAmount > 0 ? (totalPaidInvoiceAmount / totalInvoicedAmount) * 100 : 0,
         avgDealSize: totalPaidCount > 0 ? totalPaidInvoiceAmount / totalPaidCount : 0,
-        projectedRevenue: projectedPipeline + totalUnpaid
+        projectedRevenue: projectedPipeline + totalUnpaid,
+        conversionRate: totalLeads > 0 ? (wonLeads / totalLeads) * 100 : 0,
+        operatingRatio: totalPaidInvoiceAmount > 0 ? (totalExpensesAmount / totalPaidInvoiceAmount) * 100 : 0
       });
 
     } catch (err) {
@@ -212,7 +246,7 @@ export default function Analytics() {
               onClick={() => setSelectedYear(yr)}
               style={{ cursor: 'pointer', border: '1px solid var(--border-color)' }}
             >
-              {yr}
+              {yr === currentYear.toString() ? `${yr} (Current Year)` : yr}
             </button>
           ))}
         </div>
@@ -231,27 +265,37 @@ export default function Analytics() {
             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
               {advancedMetrics.collectionRate.toFixed(1)}%
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Percentage of billed revenue successfully collected.</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Percentage of billed revenue collected.</p>
           </div>
 
           <div className="glass-panel" style={{ gridColumn: 'span 1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <DollarSign size={16} color="#3b82f6" /> Avg Paid Invoice
+              <Target size={16} color="#3b82f6" /> Lead Conversion Rate
             </h3>
             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>
-              ${advancedMetrics.avgDealSize.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              {advancedMetrics.conversionRate.toFixed(1)}%
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Average deal size based on fully paid invoices.</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>% of pipeline leads won.</p>
           </div>
 
           <div className="glass-panel" style={{ gridColumn: 'span 1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Target size={16} color="#8b5cf6" /> Projected Revenue
+              <Activity size={16} color="#f59e0b" /> Operating Ratio
+            </h3>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#f59e0b' }}>
+              {advancedMetrics.operatingRatio.toFixed(1)}%
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Expenses as a % of Revenue (Lower is better).</p>
+          </div>
+
+          <div className="glass-panel" style={{ gridColumn: 'span 1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <DollarSign size={16} color="#8b5cf6" /> Projected Cashflow
             </h3>
             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#8b5cf6' }}>
               ${advancedMetrics.projectedRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Total unpaid invoices + active pipeline value.</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Unpaid invoices + active pipeline.</p>
           </div>
 
           {/* Revenue vs Expenses */}
@@ -346,6 +390,46 @@ export default function Analytics() {
                   </Pie>
                   <Tooltip formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-color)' }} />
                 </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* Revenue by Client (Client Concentration) */}
+          <div className="glass-panel" style={{ gridColumn: 'span 1', height: '350px', display: 'flex', flexDirection: 'column' }}>
+            <h2 style={{ marginBottom: '1.5rem' }}><PieIcon size={20} color="#8b5cf6" /> Client Concentration (Revenue)</h2>
+            {clientRevenue.length === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No revenue data yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={clientRevenue} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => percent > 0.05 ? `${name}` : ''}>
+                    {clientRevenue.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} contentStyle={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-color)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {/* Debt Aging Bar Chart */}
+          <div className="glass-panel" style={{ gridColumn: 'span 1', height: '350px', display: 'flex', flexDirection: 'column' }}>
+            <h2 style={{ marginBottom: '1.5rem' }}><Clock size={20} color="#ef4444" /> Unpaid Debt Aging</h2>
+            {debtTotal === 0 ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No outstanding debt.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={debtAging} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <XAxis dataKey="name" stroke="var(--text-secondary)" fontSize={11} />
+                  <YAxis stroke="var(--text-secondary)" fontSize={11} />
+                  <Tooltip formatter={(value) => `$${value.toLocaleString()}`} cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-color)' }} />
+                  <Bar dataKey="value" name="Amount" fill="#ef4444" radius={[4, 4, 0, 0]}>
+                    {debtAging.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.name === '90+ Days' ? '#b91c1c' : entry.name === '60-90 Days' ? '#ef4444' : entry.name === '30-60 Days' ? '#f87171' : '#fca5a5'} />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             )}
           </div>
