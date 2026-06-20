@@ -11,20 +11,11 @@
 DO $$ 
 DECLARE 
     t TEXT;
-    tables TEXT[] := ARRAY[
-        'okrs', 'decisions_log', 'knowledge_base', 
-        'clients', 'leads_pipeline', 'engagements', 'communications', 
-        'roadmap_tasks', 'deployments', 'hardware_inventory', 'sync_logs', 
-        'invoices', 'expenses', 'client_members', 'deliverables', 
-        'payroll', 'dividends', 'company_settings', 
-        'message_threads', 'thread_messages', 'projects', 'tasks', 
-        'meetings', 'documents', 'marketing_campaigns', 'employee_records', 
-        'job_applicants', 'contracts', 'compliance_logs', 'investors', 
-        'funding_milestones', 'support_tickets', 'business_equity', 
-        'payments', 'reminders'
-    ];
 BEGIN 
-    FOREACH t IN ARRAY tables 
+    FOR t IN 
+        SELECT tablename 
+        FROM pg_tables 
+        WHERE schemaname = 'public'
     LOOP 
         -- 1. Ensure Row Level Security is active
         EXECUTE format('ALTER TABLE IF EXISTS %I ENABLE ROW LEVEL SECURITY;', t);
