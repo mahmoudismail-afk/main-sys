@@ -130,11 +130,8 @@ export default function Payments() {
             <div className="form-group">
               <label>Payment Method</label>
               <select name="payment_method" className="form-select">
-                <option value="Stripe">Stripe</option>
-                <option value="Wire Transfer">Wire Transfer</option>
-                <option value="ACH">ACH</option>
-                <option value="Check">Check</option>
-                <option value="Other">Other</option>
+                <option value="Main Cash">Main Cash</option>
+                <option value="Whish">Whish</option>
               </select>
             </div>
             <div className="form-group">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { FileText, PlusCircle, Settings } from 'lucide-react';
+import { FileText, PlusCircle, Settings, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Engagements() {
@@ -130,6 +130,17 @@ export default function Engagements() {
     fetchData();
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this engagement? Associated invoices will also be deleted.")) {
+      const { error } = await supabase.from('engagements').delete().eq('id', id);
+      if (error) {
+        alert("Error deleting engagement: " + error.message);
+      } else {
+        fetchData();
+      }
+    }
+  };
+
   return (
     <div>
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -193,9 +204,14 @@ export default function Engagements() {
                       </div>
                     </td>
                     <td>
-                      <button onClick={() => handleEdit(eng)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                        <FileText size={16} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                        <button onClick={() => handleEdit(eng)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+                          <FileText size={16} />
+                        </button>
+                        <button onClick={() => handleDelete(eng.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
