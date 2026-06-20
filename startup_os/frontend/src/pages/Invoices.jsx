@@ -39,16 +39,24 @@ export default function Invoices() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const engagement_id = formData.get('engagement_id');
+    const engagement_id = formData.get('engagement_id') || null;
+    let client_id = formData.get('client_id');
     const amount = formData.get('amount');
     const status = formData.get('status');
     const due_date = formData.get('due_date') || null;
+    const issued_at = formData.get('issued_at') || null;
 
-    const selectedEng = engagementsList.find(eng => eng.id === engagement_id);
-    const client_id = selectedEng ? selectedEng.client_id : null;
+    if (engagement_id) {
+      const selectedEng = engagementsList.find(eng => eng.id === engagement_id);
+      if (selectedEng) client_id = selectedEng.client_id;
+    }
 
-    if (client_id && engagement_id) {
-      const { error } = await supabase.from('invoices').insert([{ client_id, engagement_id, amount, status, due_date }]);
+    if (client_id) {
+      const payload = { client_id, amount, status, due_date };
+      if (engagement_id) payload.engagement_id = engagement_id;
+      if (issued_at) payload.issued_at = issued_at;
+
+      const { error } = await supabase.from('invoices').insert([payload]);
       if (error) {
         alert(`Error creating invoice: ${error.message}`);
       } else {
@@ -56,7 +64,7 @@ export default function Invoices() {
         fetchData();
       }
     } else {
-      alert("Please select a valid engagement");
+      alert("Please select either a Client or an Engagement");
     }
   };
 
@@ -133,17 +141,28 @@ export default function Invoices() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create Invoice">
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Link to Engagement</label>
-            <select name="engagement_id" required className="form-select">
-              <option value="">Select Engagement...</option>
-              {engagementsList.map(eng => {
-                const client = clientsList.find(c => c.id === eng.client_id);
-                return (
-                  <option key={eng.id} value={eng.id}>{client?.name || 'Unknown'} - {eng.name}</option>
-                );
-              })}
-            </select>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label>Link to Client (Required if no Engagement)</label>
+              <select name="client_id" className="form-select">
+                <option value="">Select Client...</option>
+                {clientsList.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Link to Engagement (Optional)</label>
+              <select name="engagement_id" className="form-select">
+                <option value="">None / Manual</option>
+                {engagementsList.map(eng => {
+                  const client = clientsList.find(c => c.id === eng.client_id);
+                  return (
+                    <option key={eng.id} value={eng.id}>{client?.name || 'Unknown'} - {eng.name}</option>
+                  );
+                })}
+              </select>
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
@@ -159,9 +178,15 @@ export default function Invoices() {
               </select>
             </div>
           </div>
-          <div className="form-group">
-            <label>Due Date</label>
-            <input name="due_date" type="date" required className="form-input" />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-group">
+              <label>Date Issued</label>
+              <input name="issued_at" type="date" required className="form-input" defaultValue={new Date().toISOString().split('T')[0]} />
+            </div>
+            <div className="form-group">
+              <label>Due Date</label>
+              <input name="due_date" type="date" className="form-input" />
+            </div>
           </div>
           <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>

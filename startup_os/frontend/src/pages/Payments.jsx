@@ -143,15 +143,28 @@ export default function Payments() {
             </div>
           </div>
 
-          <div className="form-group" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-            <label>Reconcile to Open Invoice (Optional)</label>
-            <select name="invoice_id" className="form-select">
-              <option value="">None (Direct Deposit)</option>
-              {invoices.map(inv => (
-                <option key={inv.id} value={inv.id}>${inv.amount} - {clients.find(c => c.id === inv.client_id)?.name || 'Unknown'}</option>
-              ))}
-            </select>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Selecting an invoice will automatically mark it as Paid.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+            <div className="form-group">
+              <label>Reconcile to Open Invoice</label>
+              <select name="invoice_id" className="form-select">
+                <option value="">None (Direct Deposit / Old)</option>
+                {invoices.map(inv => (
+                  <option key={inv.id} value={inv.id}>${inv.amount} - {clients.find(c => c.id === inv.client_id)?.name || 'Unknown'}</option>
+                ))}
+              </select>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Auto-marks invoice as Paid.</p>
+            </div>
+            
+            <div className="form-group">
+              <label>Or select Client manually</label>
+              <select name="client_id" className="form-select">
+                <option value="">Select Client (if no invoice)...</option>
+                {clients.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Only needed if not selecting an invoice.</p>
+            </div>
           </div>
 
           <div className="form-actions">
