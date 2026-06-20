@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, Clock, AlertTriangle, BarChart2, PieChart as PieIcon, Briefcase } from 'lucide-react';
+import { TrendingUp, Clock, AlertTriangle, BarChart2, PieChart as PieIcon, Briefcase, Percent, DollarSign, Target } from 'lucide-react';
 
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState('6months');
@@ -13,6 +13,7 @@ export default function Analytics() {
   const [leadPipeline, setLeadPipeline] = useState([]);
   const [invoiceStatus, setInvoiceStatus] = useState([]);
   const [debtTotal, setDebtTotal] = useState(0);
+  const [advancedMetrics, setAdvancedMetrics] = useState({ collectionRate: 0, avgDealSize: 0, projectedRevenue: 0 });
   const [loading, setLoading] = useState(true);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -54,12 +55,14 @@ export default function Analytics() {
         { data: invoices },
         { data: expenses },
         { data: leads },
-        { data: payments }
+        { data: payments },
+        { data: payroll }
       ] = await Promise.all([
         supabase.from('invoices').select('*, engagements(name)').gte('created_at', startDate).lte('created_at', endDate),
         supabase.from('expenses').select('*').gte('date', startDate).lte('date', endDate),
         supabase.from('leads_pipeline').select('*'), // Leads are typically snapshot, not date gated
-        supabase.from('payments').select('amount, payment_date').gte('payment_date', startDate).lte('payment_date', endDate)
+        supabase.from('payments').select('amount, payment_date').gte('payment_date', startDate).lte('payment_date', endDate),
+        supabase.from('payroll').select('*').gte('payment_date', startDate).lte('payment_date', endDate)
       ]);
 
       const trendMap = {};
@@ -73,16 +76,22 @@ export default function Analytics() {
       }
 
       let totalUnpaid = 0;
+      let totalInvoicedAmount = 0;
+      let totalPaidInvoiceAmount = 0;
+      let totalPaidCount = 0;
       const engMap = {};
       const expMap = {};
       const invStatusMap = { paid: 0, sent: 0, overdue: 0, draft: 0 };
 
       (invoices || []).forEach(inv => {
         invStatusMap[inv.status] = (invStatusMap[inv.status] || 0) + Number(inv.amount);
+        totalInvoicedAmount += Number(inv.amount);
 
         if (inv.status !== 'paid') {
           totalUnpaid += Number(inv.amount);
         } else {
+          totalPaidInvoiceAmount += Number(inv.amount);
+          totalPaidCount++;
           const engName = inv.engagements?.name || 'Other';
           engMap[engName] = (engMap[engName] || 0) + Number(inv.amount);
         }
@@ -103,6 +112,15 @@ export default function Analytics() {
           trendMap[key].expenses += Number(exp.amount);
         }
         expMap[exp.category] = (expMap[exp.category] || 0) + Number(exp.amount);
+      });
+
+      (payroll || []).forEach(p => {
+        const d = new Date(p.payment_date);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (trendMap[key]) {
+          trendMap[key].expenses += Number(p.amount);
+        }
+        expMap['Payroll'] = (expMap['Payroll'] || 0) + Number(p.amount);
       });
 
       // Calculate margins
@@ -128,13 +146,21 @@ export default function Analytics() {
         Object.keys(invStatusMap).filter(k => invStatusMap[k] > 0).map(status => ({ name: status, value: invStatusMap[status] }))
       );
 
+      let projectedPipeline = 0;
       const leadStageMap = {};
       (leads || []).forEach(l => {
         leadStageMap[l.stage] = (leadStageMap[l.stage] || 0) + Number(l.value);
+        if (l.stage !== 'lost') projectedPipeline += Number(l.value);
       });
       setLeadPipeline(
         Object.keys(leadStageMap).map(stage => ({ name: stage, value: leadStageMap[stage] }))
       );
+
+      setAdvancedMetrics({
+        collectionRate: totalInvoicedAmount > 0 ? (totalPaidInvoiceAmount / totalInvoicedAmount) * 100 : 0,
+        avgDealSize: totalPaidCount > 0 ? totalPaidInvoiceAmount / totalPaidCount : 0,
+        projectedRevenue: projectedPipeline + totalUnpaid
+      });
 
     } catch (err) {
       console.error(err);
@@ -197,6 +223,37 @@ export default function Analytics() {
       ) : (
         <div className="dashboard-grid">
           
+          {/* Advanced Metric Cards */}
+          <div className="glass-panel" style={{ gridColumn: 'span 1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Percent size={16} color="#10b981" /> Collection Efficiency
+            </h3>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#10b981' }}>
+              {advancedMetrics.collectionRate.toFixed(1)}%
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Percentage of billed revenue successfully collected.</p>
+          </div>
+
+          <div className="glass-panel" style={{ gridColumn: 'span 1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <DollarSign size={16} color="#3b82f6" /> Avg Paid Invoice
+            </h3>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6' }}>
+              ${advancedMetrics.avgDealSize.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Average deal size based on fully paid invoices.</p>
+          </div>
+
+          <div className="glass-panel" style={{ gridColumn: 'span 1', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <h3 style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Target size={16} color="#8b5cf6" /> Projected Revenue
+            </h3>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#8b5cf6' }}>
+              ${advancedMetrics.projectedRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Total unpaid invoices + active pipeline value.</p>
+          </div>
+
           {/* Revenue vs Expenses */}
           <div className="glass-panel" style={{ gridColumn: 'span 2', height: '350px', display: 'flex', flexDirection: 'column' }}>
             <h2 style={{ marginBottom: '1.5rem' }}><TrendingUp size={20} color="var(--accent-primary)" /> Cash Flow Trend</h2>
