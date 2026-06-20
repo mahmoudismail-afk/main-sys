@@ -53,11 +53,13 @@ export default function Analytics() {
       const [
         { data: invoices },
         { data: expenses },
-        { data: leads }
+        { data: leads },
+        { data: payments }
       ] = await Promise.all([
         supabase.from('invoices').select('*, engagements(name)').gte('created_at', startDate).lte('created_at', endDate),
         supabase.from('expenses').select('*').gte('date', startDate).lte('date', endDate),
-        supabase.from('leads_pipeline').select('*') // Leads are typically snapshot, not date gated
+        supabase.from('leads_pipeline').select('*'), // Leads are typically snapshot, not date gated
+        supabase.from('payments').select('amount, payment_date').gte('payment_date', startDate).lte('payment_date', endDate)
       ]);
 
       const trendMap = {};
@@ -76,19 +78,21 @@ export default function Analytics() {
       const invStatusMap = { paid: 0, sent: 0, overdue: 0, draft: 0 };
 
       (invoices || []).forEach(inv => {
-        const d = new Date(inv.created_at);
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        
         invStatusMap[inv.status] = (invStatusMap[inv.status] || 0) + Number(inv.amount);
 
         if (inv.status !== 'paid') {
           totalUnpaid += Number(inv.amount);
         } else {
-          if (trendMap[key]) {
-            trendMap[key].revenue += Number(inv.amount);
-          }
           const engName = inv.engagements?.name || 'Other';
           engMap[engName] = (engMap[engName] || 0) + Number(inv.amount);
+        }
+      });
+
+      (payments || []).forEach(p => {
+        const d = new Date(p.payment_date);
+        const key = `${d.getFullYear()}-${d.getMonth()}`;
+        if (trendMap[key]) {
+          trendMap[key].revenue += Number(p.amount);
         }
       });
 
@@ -143,6 +147,9 @@ export default function Analytics() {
     fetchAnalytics();
   }, [activeTab, selectedYear]);
 
+  const currentYear = new Date().getFullYear();
+  const archiveYears = [currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map(String);
+
   return (
     <div>
       <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -172,7 +179,7 @@ export default function Analytics() {
       {activeTab === 'archive' && (
         <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <span style={{ color: 'var(--text-secondary)' }}>Select Archive Year:</span>
-          {['2025', '2026', '2027'].map(yr => (
+          {archiveYears.map(yr => (
             <button 
               key={yr}
               className={`badge ${selectedYear === yr ? 'completed' : 'pending'}`}
