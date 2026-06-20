@@ -311,3 +311,105 @@ table.data-table th {
 .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* ------------------------------------- */
+/* Mobile Responsiveness                 */
+/* ------------------------------------- */
+
+.mobile-header {
+  display: none;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  /* The Mobile Header */
+  .mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+
+  .mobile-header h1 {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* The Slide-out Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* The Main Content */
+  .main-content {
+    padding: 1rem;
+    padding-bottom: 3rem; /* extra space at bottom for mobile scrolling */
+  }
+
+  /* Mobile Dashboard Grid */
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Make all data tables horizontally scrollable on mobile */
+  table.data-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Hide the huge desktop header in the sidebar */
+  .sidebar > h1 {
+    display: none; 
+  }
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+
+.sidebar-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
