@@ -67,7 +67,7 @@ export default function Invoices() {
             client_id: data[0].client_id,
             amount: data[0].amount,
             payment_method: 'Main Cash',
-            payment_date: new Date().toISOString().split('T')[0]
+            payment_date: data[0].due_date || data[0].issued_at || new Date().toISOString().split('T')[0]
           }]);
         }
         setIsModalOpen(false);
@@ -92,7 +92,7 @@ export default function Invoices() {
             client_id: invoice.client_id,
             amount: invoice.amount,
             payment_method: 'Main Cash',
-            payment_date: new Date().toISOString().split('T')[0]
+            payment_date: invoice.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : (invoice.issued_at ? new Date(invoice.issued_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
           }]);
         }
       }
