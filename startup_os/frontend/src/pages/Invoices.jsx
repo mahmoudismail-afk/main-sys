@@ -73,6 +73,11 @@ export default function Invoices() {
     fetchData();
   };
 
+  const updateDueDate = async (id, newDate) => {
+    await supabase.from('invoices').update({ due_date: newDate || null }).eq('id', id);
+    fetchData();
+  };
+
   const getStatusBadge = (status) => {
     switch(status) {
       case 'paid': return 'completed'; // Green
@@ -112,7 +117,15 @@ export default function Invoices() {
                     <td style={{ fontWeight: 600 }}>{inv.clients?.name || 'Unknown'}</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{inv.engagements?.name || 'Manual'}</td>
                     <td style={{ color: '#10b981', fontWeight: 600 }}>${Number(inv.amount).toLocaleString()}</td>
-                    <td>{inv.due_date ? new Date(inv.due_date).toLocaleDateString() : 'N/A'}</td>
+                    <td>
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        style={{ padding: '0.25rem', fontSize: '0.75rem', width: 'auto', background: 'transparent', border: '1px solid var(--border-color)' }}
+                        value={inv.due_date ? new Date(inv.due_date).toISOString().split('T')[0] : ''}
+                        onChange={(e) => updateDueDate(inv.id, e.target.value)}
+                      />
+                    </td>
                     <td>
                       <span className={`badge ${getStatusBadge(inv.status)}`} style={{ textTransform: 'capitalize' }}>
                         {inv.status}
