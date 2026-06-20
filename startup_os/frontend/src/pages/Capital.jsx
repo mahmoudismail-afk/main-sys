@@ -7,6 +7,8 @@ export default function Capital() {
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddCapitalModalOpen, setIsAddCapitalModalOpen] = useState(false);
+  const [addCapitalItem, setAddCapitalItem] = useState(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,6 +45,31 @@ export default function Capital() {
       setIsModalOpen(false);
       fetchData();
     }
+  };
+
+  const handleAddCapitalSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const amountToAdd = Number(formData.get('amount'));
+    
+    const newRaised = Number(addCapitalItem.raised_amount || 0) + amountToAdd;
+    const isCompleted = newRaised >= Number(addCapitalItem.target_amount);
+    
+    const payload = { raised_amount: newRaised };
+    if (isCompleted) payload.status = 'completed';
+
+    const { error } = await supabase.from('funding_milestones').update(payload).eq('id', addCapitalItem.id);
+    if (error) {
+      alert(`Error adding capital: ${error.message}`);
+    } else {
+      setIsAddCapitalModalOpen(false);
+      fetchData();
+    }
+  };
+
+  const openAddCapital = (item) => {
+    setAddCapitalItem(item);
+    setIsAddCapitalModalOpen(true);
   };
 
   const calculateProgress = (raised, target) => {
@@ -84,8 +111,15 @@ export default function Capital() {
                     <div style={{ height: '100%', width: `${progress}%`, background: progress === 100 ? '#10b981' : 'var(--accent-primary)', transition: 'width 0.5s ease' }}></div>
                   </div>
 
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'right' }}>
-                    Target Date: {m.target_date ? new Date(m.target_date).toLocaleDateString() : 'TBD'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      Target Date: {m.target_date ? new Date(m.target_date).toLocaleDateString() : 'TBD'}
+                    </div>
+                    {m.status !== 'completed' && (
+                      <button onClick={() => openAddCapital(m)} className="primary-btn" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <PlusCircle size={12} /> Add Cash
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -127,6 +161,29 @@ export default function Capital() {
             <button type="submit" className="primary-btn">Save Milestone</button>
           </div>
         </form>
+      </Modal>
+
+      <Modal isOpen={isAddCapitalModalOpen} onClose={() => setIsAddCapitalModalOpen(false)} title={`Add Capital to ${addCapitalItem?.title}`}>
+        {addCapitalItem && (
+          <form onSubmit={handleAddCapitalSubmit}>
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px' }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Target: <strong>${Number(addCapitalItem.target_amount).toLocaleString()}</strong><br />
+                Currently Raised: <strong style={{ color: '#10b981' }}>${Number(addCapitalItem.raised_amount).toLocaleString()}</strong>
+              </p>
+            </div>
+            
+            <div className="form-group">
+              <label>Amount to Add ($)</label>
+              <input name="amount" type="number" step="0.01" required className="form-input" placeholder="E.g. 50000" />
+            </div>
+
+            <div className="form-actions">
+              <button type="button" className="btn-secondary" onClick={() => setIsAddCapitalModalOpen(false)}>Cancel</button>
+              <button type="submit" className="primary-btn">Record Capital Injection</button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );

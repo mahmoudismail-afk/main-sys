@@ -21,12 +21,13 @@ import Capital from './pages/Capital';
 import Inventory from './pages/Inventory';
 import Engagements from './pages/Engagements';
 import Payroll from './pages/Payroll';
+import MessageCenter from './pages/MessageCenter';
 
 import { 
   Target, Users, Server, DollarSign, BarChart2, LayoutDashboard, 
   Sun, Moon, Users2, FileText, CreditCard, Receipt, 
   PieChart, Briefcase, CheckSquare, Calendar, Bell, 
-  Landmark, PackageOpen, Settings, LogOut 
+  Landmark, PackageOpen, Settings, LogOut, MessageSquare
 } from 'lucide-react';
 
 // Placeholder components for the new granular routes
@@ -119,6 +120,7 @@ function App() {
             Operations
           </div>
           <NavLink to="/tasks" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><CheckSquare size={18} /> Tasks</NavLink>
+          <NavLink to="/messages" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><MessageSquare size={18} /> Message Center</NavLink>
           <NavLink to="/calendar" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Calendar size={18} /> Calendar</NavLink>
           <NavLink to="/reminders" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Bell size={18} /> Reminders</NavLink>
           <NavLink to="/inventory" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><PackageOpen size={18} /> Inventory</NavLink>
@@ -159,6 +161,7 @@ function App() {
             <Route path="/capital" element={<Capital />} />
             
             <Route path="/tasks" element={<Tasks />} />
+            <Route path="/messages" element={<MessageCenter />} />
             <Route path="/calendar" element={<CalendarView />} />
             <Route path="/reminders" element={<Reminders />} />
             <Route path="/inventory" element={<Inventory />} />

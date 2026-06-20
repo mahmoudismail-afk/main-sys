@@ -6,17 +6,42 @@ export default function Settings() {
   const [user, setUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
+  const [profileMessage, setProfileMessage] = useState(null);
+  const [profileError, setProfileError] = useState(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      if (user?.user_metadata?.display_name) {
+        setDisplayName(user.user_metadata.display_name);
+      }
     };
     fetchUser();
   }, []);
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setProfileLoading(true);
+    setProfileError(null);
+    setProfileMessage(null);
+
+    const { error } = await supabase.auth.updateUser({
+      data: { display_name: displayName }
+    });
+
+    if (error) {
+      setProfileError(error.message);
+    } else {
+      setProfileMessage("Profile successfully updated!");
+    }
+    setProfileLoading(false);
+  };
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -76,6 +101,47 @@ export default function Settings() {
               <Shield size={12} /> Active
             </span>
           </div>
+        </div>
+
+        {/* Profile Details / Display Name */}
+        <div className="glass-panel" style={{ maxWidth: '600px', marginTop: '1rem' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            <User size={20} color="var(--accent-primary)" /> Edit Profile
+          </h2>
+
+          {profileError && (
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+              {profileError}
+            </div>
+          )}
+
+          {profileMessage && (
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle size={16} /> {profileMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleProfileUpdate}>
+            <div className="form-group">
+              <label>Display Name</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="E.g., John Doe"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+              />
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>This name will be visible in the Message Center.</p>
+            </div>
+            <button 
+              type="submit" 
+              className="primary-btn" 
+              disabled={profileLoading}
+              style={{ marginTop: '1rem' }}
+            >
+              {profileLoading ? 'Saving...' : 'Save Profile'}
+            </button>
+          </form>
         </div>
 
         {/* Security / Password Change */}
