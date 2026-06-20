@@ -421,7 +421,7 @@ export default function Equity() {
 
             <div className="form-group">
               <label>Withdrawal Amount ($)</label>
-              <input name="amount" type="number" step="0.01" required max={getStakeholderWalletBalance(withdrawStakeholder.id)} className="form-input" defaultValue={getStakeholderWalletBalance(withdrawStakeholder.id)} />
+              <input name="amount" type="number" step="0.01" required className="form-input" placeholder={`E.g. 5000.00`} />
             </div>
             
             <div className="form-group">
