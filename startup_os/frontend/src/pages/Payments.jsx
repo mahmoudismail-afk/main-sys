@@ -19,7 +19,7 @@ export default function Payments() {
         { data: clientsData }
       ] = await Promise.all([
         supabase.from('payments').select('*, clients(name), invoices(id, amount)').order('payment_date', { ascending: false }),
-        supabase.from('invoices').select('id, amount, client_id, status').neq('status', 'paid'),
+        supabase.from('invoices').select('id, amount, client_id, status'),
         supabase.from('clients').select('id, name')
       ]);
       setPayments(paymentsData || []);
