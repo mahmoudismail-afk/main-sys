@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Receipt, PlusCircle } from 'lucide-react';
+import { Receipt, PlusCircle, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Expenses() {
@@ -34,9 +34,21 @@ export default function Expenses() {
       date: formData.get('date')
     };
 
-    await supabase.from('expenses').insert([payload]);
-    setIsModalOpen(false);
-    fetchData();
+    const { error } = await supabase.from('expenses').insert([payload]);
+    if (error) {
+      alert(`Error saving expense: ${error.message}`);
+    } else {
+      setIsModalOpen(false);
+      fetchData();
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this expense?")) {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) alert("Error deleting expense: " + error.message);
+      else fetchData();
+    }
   };
 
   return (
@@ -59,6 +71,7 @@ export default function Expenses() {
                   <th>Description</th>
                   <th>Category</th>
                   <th>Amount</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,6 +81,11 @@ export default function Expenses() {
                     <td style={{ fontWeight: 500 }}>{exp.description}</td>
                     <td><span className="badge">{exp.category}</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 600 }}>${Number(exp.amount).toLocaleString()}</td>
+                    <td>
+                      <button onClick={() => handleDelete(exp.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
