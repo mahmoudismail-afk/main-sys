@@ -56,10 +56,20 @@ export default function Invoices() {
       if (engagement_id) payload.engagement_id = engagement_id;
       if (issued_at) payload.issued_at = issued_at;
 
-      const { error } = await supabase.from('invoices').insert([payload]);
+      const { data, error } = await supabase.from('invoices').insert([payload]).select();
       if (error) {
         alert(`Error creating invoice: ${error.message}`);
       } else {
+        // Auto-generate payment if created as paid
+        if (status === 'paid' && data && data.length > 0) {
+          await supabase.from('payments').insert([{
+            invoice_id: data[0].id,
+            client_id: data[0].client_id,
+            amount: data[0].amount,
+            payment_method: 'Main Cash',
+            payment_date: new Date().toISOString().split('T')[0]
+          }]);
+        }
         setIsModalOpen(false);
         fetchData();
       }
@@ -69,7 +79,24 @@ export default function Invoices() {
   };
 
   const updateStatus = async (id, newStatus) => {
-    await supabase.from('invoices').update({ status: newStatus }).eq('id', id);
+    const { error } = await supabase.from('invoices').update({ status: newStatus }).eq('id', id);
+    
+    if (!error && newStatus === 'paid') {
+      const invoice = invoices.find(inv => inv.id === id);
+      if (invoice) {
+        // Check if a payment already exists
+        const { data: existingPayments } = await supabase.from('payments').select('id').eq('invoice_id', id);
+        if (!existingPayments || existingPayments.length === 0) {
+          await supabase.from('payments').insert([{
+            invoice_id: id,
+            client_id: invoice.client_id,
+            amount: invoice.amount,
+            payment_method: 'Main Cash',
+            payment_date: new Date().toISOString().split('T')[0]
+          }]);
+        }
+      }
+    }
     fetchData();
   };
 
