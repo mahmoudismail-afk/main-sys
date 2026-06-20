@@ -32,6 +32,7 @@ export default function Expenses() {
       amount: formData.get('amount'),
       category: formData.get('category'),
       date: formData.get('date'),
+      end_date: formData.get('end_date') || null,
       is_recurring: formData.get('is_recurring') === 'on',
       billing_cycle: formData.get('is_recurring') === 'on' ? formData.get('billing_cycle') : null
     };
@@ -69,7 +70,8 @@ export default function Expenses() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Date</th>
+                  <th>Start Date</th>
+                  <th>End Date</th>
                   <th>Description</th>
                   <th>Category</th>
                   <th>Amount</th>
@@ -80,6 +82,7 @@ export default function Expenses() {
                 {expenses.map(exp => (
                   <tr key={exp.id}>
                     <td>{new Date(exp.date).toLocaleDateString()}</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{exp.end_date ? new Date(exp.end_date).toLocaleDateString() : 'Ongoing'}</td>
                     <td style={{ fontWeight: 500 }}>{exp.description}</td>
                     <td><span className="badge">{exp.category}</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 600 }}>${Number(exp.amount).toLocaleString()} {exp.is_recurring && <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>/ {exp.billing_cycle}</span>}</td>
@@ -134,6 +137,10 @@ export default function Expenses() {
                 <option value="annually">Billed Annually</option>
                 <option value="weekly">Billed Weekly</option>
               </select>
+            </div>
+            <div className="form-group" style={{ margin: 0, marginTop: '1rem' }}>
+              <label>Subscription End Date (Optional)</label>
+              <input name="end_date" type="date" className="form-input" />
             </div>
           </div>
 
