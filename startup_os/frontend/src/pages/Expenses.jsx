@@ -31,7 +31,9 @@ export default function Expenses() {
       description: formData.get('description'),
       amount: formData.get('amount'),
       category: formData.get('category'),
-      date: formData.get('date')
+      date: formData.get('date'),
+      is_recurring: formData.get('is_recurring') === 'on',
+      billing_cycle: formData.get('is_recurring') === 'on' ? formData.get('billing_cycle') : null
     };
 
     const { error } = await supabase.from('expenses').insert([payload]);
@@ -80,7 +82,7 @@ export default function Expenses() {
                     <td>{new Date(exp.date).toLocaleDateString()}</td>
                     <td style={{ fontWeight: 500 }}>{exp.description}</td>
                     <td><span className="badge">{exp.category}</span></td>
-                    <td style={{ color: '#ef4444', fontWeight: 600 }}>${Number(exp.amount).toLocaleString()}</td>
+                    <td style={{ color: '#ef4444', fontWeight: 600 }}>${Number(exp.amount).toLocaleString()} {exp.is_recurring && <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>/ {exp.billing_cycle}</span>}</td>
                     <td>
                       <button onClick={() => handleDelete(exp.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
                         <Trash2 size={16} />
@@ -120,6 +122,21 @@ export default function Expenses() {
               <option value="other">Other</option>
             </select>
           </div>
+
+          <div style={{ background: 'rgba(59, 130, 246, 0.05)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <input type="checkbox" name="is_recurring" id="is_recurring" style={{ transform: 'scale(1.2)' }} />
+              <label htmlFor="is_recurring" style={{ margin: 0, cursor: 'pointer' }}>This is a recurring subscription</label>
+            </div>
+            <div className="form-group" style={{ margin: 0 }}>
+              <select name="billing_cycle" className="form-select" defaultValue="monthly">
+                <option value="monthly">Billed Monthly</option>
+                <option value="annually">Billed Annually</option>
+                <option value="weekly">Billed Weekly</option>
+              </select>
+            </div>
+          </div>
+
           <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => setIsModalOpen(false)}>Cancel</button>
             <button type="submit" className="primary-btn">Save Expense</button>
