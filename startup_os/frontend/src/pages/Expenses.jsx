@@ -29,6 +29,7 @@ export default function Expenses() {
     const formData = new FormData(e.target);
     const payload = {
       description: formData.get('description'),
+      name: formData.get('description'), // Fallback for databases that enforce a NOT NULL 'name' column
       amount: formData.get('amount'),
       category: formData.get('category'),
       date: formData.get('date'),
