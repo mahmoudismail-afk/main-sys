@@ -10,6 +10,7 @@ export default function ExecutiveDashboard() {
   const [deliverables, setDeliverables] = useState([]);
   const [payroll, setPayroll] = useState([]);
   const [dividends, setDividends] = useState([]);
+  const [paymentsList, setPaymentsList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,14 +22,16 @@ export default function ExecutiveDashboard() {
           { data: profData, error: err3 },
           { data: delData, error: err4 },
           { data: payData, error: err5 },
-          { data: divData, error: err6 }
+          { data: divData, error: err6 },
+          { data: paymentsData, error: err7 }
         ] = await Promise.all([
           supabase.from('invoices').select('*, clients(name)'),
           supabase.from('expenses').select('*'),
           supabase.from('client_profitability_view').select('*'),
           supabase.from('deliverables').select('*, clients(name)').eq('status', 'pending'),
           supabase.from('payroll').select('*'),
-          supabase.from('dividends').select('*')
+          supabase.from('dividends').select('*'),
+          supabase.from('payments').select('*')
         ]);
         
         if (err1) console.error(err1);
@@ -37,6 +40,7 @@ export default function ExecutiveDashboard() {
         if (err4) console.error(err4);
         if (err5) console.error(err5);
         if (err6) console.error(err6);
+        if (err7) console.error(err7);
 
         setInvoices(invData || []);
         setExpenses(expData || []);
@@ -44,6 +48,7 @@ export default function ExecutiveDashboard() {
         setDeliverables(delData || []);
         setPayroll(payData || []);
         setDividends(divData || []);
+        setPaymentsList(paymentsData || []);
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         alert(`Error loading Executive Dashboard: ${err.message}`);
@@ -68,12 +73,12 @@ export default function ExecutiveDashboard() {
   // Monthly Cashflow Aggregation
   const monthlyDataMap = {};
   
-  // Combine all months spanning the data
-  invoices.filter(i => i.status === 'paid').forEach(i => {
-    const date = new Date(i.issued_at || i.due_date || Date.now());
+  // Combine all months spanning the data using actual Payments received for Revenue
+  paymentsList.forEach(p => {
+    const date = new Date(p.payment_date || p.created_at || Date.now());
     const month = date.toLocaleString('default', { month: 'short', year: '2-digit' });
     if (!monthlyDataMap[month]) monthlyDataMap[month] = { name: month, Revenue: 0, Expenses: 0, sortKey: date.getTime() };
-    monthlyDataMap[month].Revenue += Number(i.amount || 0);
+    monthlyDataMap[month].Revenue += Number(p.amount || 0);
   });
   
   expenses.forEach(e => {
