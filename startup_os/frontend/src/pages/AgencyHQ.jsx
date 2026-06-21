@@ -43,9 +43,10 @@ export default function AgencyHQ() {
     const description = formData.get('description');
     const type = formData.get('type');
     const status = formData.get('status');
+    const quarter = formData.get('quarter');
 
     // We pass `name: title` to satisfy legacy database schemas that had a strict 'name' column instead of 'title'
-    const { error } = await supabase.from('okrs').insert([{ name: title, title, description, type, status }]);
+    const { error } = await supabase.from('okrs').insert([{ name: title, title, description, type, status, quarter }]);
     if (error) {
       alert(`Error saving OKR: ${error.message}`);
     } else {
@@ -91,7 +92,10 @@ export default function AgencyHQ() {
               okrs.map(okr => (
                 <div key={okr.id} className="list-item">
                   <span>{okr.title || okr.name}</span>
-                  <span className={`badge ${okr.status === 'completed' ? 'completed' : 'pending'}`}>{okr.status}</span>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {okr.quarter && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '0.1rem 0.4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>{okr.quarter}</span>}
+                    <span className={`badge ${okr.status === 'completed' ? 'completed' : 'pending'}`}>{okr.status}</span>
+                  </div>
                 </div>
               ))
             )}
@@ -121,6 +125,10 @@ export default function AgencyHQ() {
           <div className="form-group">
             <label>Title</label>
             <input name="title" required className="form-input" placeholder="E.g., Increase Q3 Revenue by 20%" />
+          </div>
+          <div className="form-group">
+            <label>Quarter</label>
+            <input name="quarter" required className="form-input" placeholder="E.g., Q3 2026" defaultValue={`Q${Math.floor((new Date().getMonth() + 3) / 3)} ${new Date().getFullYear()}`} />
           </div>
           <div className="form-group">
             <label>Description</label>
