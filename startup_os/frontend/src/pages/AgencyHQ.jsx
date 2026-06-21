@@ -44,7 +44,8 @@ export default function AgencyHQ() {
     const type = formData.get('type');
     const status = formData.get('status');
 
-    const { error } = await supabase.from('okrs').insert([{ title, description, type, status }]);
+    // We pass `name: title` to satisfy legacy database schemas that had a strict 'name' column instead of 'title'
+    const { error } = await supabase.from('okrs').insert([{ name: title, title, description, type, status }]);
     if (error) {
       alert(`Error saving OKR: ${error.message}`);
     } else {
@@ -89,7 +90,7 @@ export default function AgencyHQ() {
             ) : (
               okrs.map(okr => (
                 <div key={okr.id} className="list-item">
-                  <span>{okr.title}</span>
+                  <span>{okr.title || okr.name}</span>
                   <span className={`badge ${okr.status === 'completed' ? 'completed' : 'pending'}`}>{okr.status}</span>
                 </div>
               ))
