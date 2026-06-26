@@ -152,131 +152,100 @@ export default function SuperAdmin() {
   };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '2rem 0' }}>
+      <div style={{ marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#ef4444' }}>
-            <ShieldAlert size={28} /> Global Admin IAM
-          </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Manage global multi-tenant architecture, cross-tenant identities, and IAM roles.</p>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>System Settings</h1>
+          <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>Manage organizations and access.</p>
         </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button className={`nav-link ${activeTab === 'organizations' ? 'active' : ''}`} onClick={() => setActiveTab('organizations')} style={{ background: activeTab === 'organizations' ? 'rgba(255,255,255,0.1)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>
-            <Building size={16} /> Organizations
+        <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.25rem', borderRadius: '8px' }}>
+          <button className={`nav-link ${activeTab === 'organizations' ? 'active' : ''}`} onClick={() => setActiveTab('organizations')} style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', background: activeTab === 'organizations' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeTab === 'organizations' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}>
+            Organizations
           </button>
-          <button className={`nav-link ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')} style={{ background: activeTab === 'users' ? 'rgba(255,255,255,0.1)' : 'transparent', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer' }}>
-            <Users size={16} /> Global Users
+          <button className={`nav-link ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')} style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: 'none', background: activeTab === 'users' ? 'rgba(255,255,255,0.1)' : 'transparent', color: activeTab === 'users' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500 }}>
+            Users
           </button>
         </div>
       </div>
 
-      <div className="glass-panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {activeTab === 'organizations' ? <><Building size={20} /> Registered Tenants</> : <><Users size={20} /> Identity Directory</>}
-          </h2>
+      <div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
           {activeTab === 'organizations' ? (
-            <button className="primary-btn" style={{ background: '#ef4444' }} onClick={() => setIsOrgModalOpen(true)}>
-              <Plus size={16} style={{ marginRight: '0.5rem' }} /> New Tenant
+            <button className="primary-btn" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }} onClick={() => setIsOrgModalOpen(true)}>
+              + Add Organization
             </button>
           ) : (
-            <button className="primary-btn" style={{ background: '#3b82f6' }} onClick={() => setIsUserModalOpen(true)}>
-              <Plus size={16} style={{ marginRight: '0.5rem' }} /> Create Global User
+            <button className="primary-btn" style={{ fontSize: '0.85rem', padding: '0.5rem 1rem' }} onClick={() => setIsUserModalOpen(true)}>
+              + Add User
             </button>
           )}
         </div>
 
         {/* ORGANIZATIONS TAB */}
         {activeTab === 'organizations' && (
-          <>
-            {orgLoading ? <div className="loader">Loading...</div> : organizations.length === 0 ? <p>No organizations found.</p> : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Organization Name</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Tenant ID (UUID)</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Created At</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {orgLoading ? <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div> : organizations.length === 0 ? <p style={{ padding: '2rem' }}>No organizations found.</p> : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Name</th>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>ID</th>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500, textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {organizations.map(org => (
+                    <tr key={org.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                      <td style={{ padding: '1rem 1.5rem', fontWeight: 500 }}>{org.name}</td>
+                      <td style={{ padding: '1rem 1.5rem', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>{org.id.split('-')[0]}...</td>
+                      <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                        <button onClick={() => viewOrgStaff(org)} style={{ background: 'transparent', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.85rem', marginRight: '1rem' }}>
+                          View Staff
+                        </button>
+                        <button onClick={() => handleDeleteOrg(org.id, org.name)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem' }}>
+                          Delete
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {organizations.map(org => (
-                      <tr key={org.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '1rem', fontWeight: 500 }}>{org.name}</td>
-                        <td style={{ padding: '1rem', fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{org.id}</td>
-                        <td style={{ padding: '1rem', fontSize: '0.9rem' }}>{new Date(org.created_at).toLocaleDateString()}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          <button onClick={() => viewOrgStaff(org)} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-primary)', cursor: 'pointer', padding: '0.25rem 0.75rem', borderRadius: '4px', marginRight: '0.5rem', fontSize: '0.8rem' }}>
-                            View Staff
-                          </button>
-                          <button onClick={() => handleDeleteOrg(org.id, org.name)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: '4px' }} title="Delete Organization">
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-              <button onClick={() => setOrgPage(p => Math.max(0, p - 1))} disabled={orgPage === 0} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ArrowLeft size={16} /> Previous
-              </button>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Page {orgPage + 1}</span>
-              <button onClick={() => setOrgPage(p => p + 1)} disabled={!orgHasMore} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                Next <ArrowRight size={16} />
-              </button>
-            </div>
-          </>
+          </div>
         )}
 
         {/* USERS TAB */}
         {activeTab === 'users' && (
-          <>
-            {usersLoading ? <div className="loader">Loading...</div> : users.length === 0 ? <p>No users found.</p> : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Name</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Role</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Organization</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-secondary)', fontWeight: 600, textAlign: 'right' }}>Actions</th>
+          <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {usersLoading ? <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading...</div> : users.length === 0 ? <p style={{ padding: '2rem' }}>No users found.</p> : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Name</th>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Organization</th>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Role</th>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500, textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                      <td style={{ padding: '1rem 1.5rem', fontWeight: 500 }}>{u.first_name || u.full_name || 'Unnamed'}</td>
+                      <td style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)' }}>{u.organizations?.name || 'None'}</td>
+                      <td style={{ padding: '1rem 1.5rem' }}>
+                        <span style={{ color: u.role === 'super_admin' ? '#ef4444' : 'var(--text-primary)' }}>{u.role}</span>
+                      </td>
+                      <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                        <button onClick={() => { setSelectedUser(u); setIsMoveUserModalOpen(true); }} style={{ background: 'transparent', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.85rem' }}>
+                          Edit Access
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {users.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        <td style={{ padding: '1rem', fontWeight: 500 }}>{u.first_name || 'Unknown'}</td>
-                        <td style={{ padding: '1rem' }}>
-                          <span className="badge" style={{ background: u.role === 'super_admin' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)', color: u.role === 'super_admin' ? '#f87171' : '#93c5fd' }}>
-                            {u.role}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{u.organizations?.name || 'Unassigned'}</td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          <button onClick={() => { setSelectedUser(u); setIsMoveUserModalOpen(true); }} style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-primary)', cursor: 'pointer', padding: '0.25rem 0.75rem', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <ArrowRightLeft size={14} /> Assign / Edit
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-              <button onClick={() => setUserPage(p => Math.max(0, p - 1))} disabled={userPage === 0} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ArrowLeft size={16} /> Previous
-              </button>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Page {userPage + 1}</span>
-              <button onClick={() => setUserPage(p => p + 1)} disabled={!userHasMore} className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                Next <ArrowRight size={16} />
-              </button>
-            </div>
-          </>
+          </div>
         )}
       </div>
 
