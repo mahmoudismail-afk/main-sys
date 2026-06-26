@@ -236,8 +236,17 @@ export default function SuperAdmin() {
                         <span style={{ color: u.role === 'super_admin' ? '#ef4444' : 'var(--text-primary)' }}>{u.role}</span>
                       </td>
                       <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
-                        <button onClick={() => { setSelectedUser(u); setIsMoveUserModalOpen(true); }} style={{ background: 'transparent', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.85rem' }}>
+                        <button onClick={() => { setSelectedUser(u); setIsMoveUserModalOpen(true); }} style={{ background: 'transparent', border: 'none', color: '#3b82f6', cursor: 'pointer', fontSize: '0.85rem', marginRight: '1rem' }}>
                           Edit Access
+                        </button>
+                        <button onClick={async () => {
+                          if (window.confirm(`WARNING: Are you sure you want to completely delete "${u.full_name || u.first_name}"? This will wipe their account forever.`)) {
+                            const { error } = await supabase.rpc('admin_delete_user', { target_user_id: u.id });
+                            if (error) alert(error.message);
+                            else fetchUsers(userPage);
+                          }
+                        }} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem' }}>
+                          Delete
                         </button>
                       </td>
                     </tr>
