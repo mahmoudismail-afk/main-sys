@@ -31,6 +31,11 @@ export default function SuperAdmin() {
   // All Orgs for dropdowns
   const [allOrgsDropdown, setAllOrgsDropdown] = useState([]);
 
+  // Create User Modal State
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [isEmailManuallyEdited, setIsEmailManuallyEdited] = useState(false);
+
   useEffect(() => {
     // Fetch all orgs for dropdowns (no pagination for dropdowns)
     supabase.from('organizations').select('id, name').order('name').then(({ data }) => setAllOrgsDropdown(data || []));
@@ -130,6 +135,9 @@ export default function SuperAdmin() {
     else {
       alert("User created successfully!");
       setIsUserModalOpen(false);
+      setNewUserName('');
+      setNewUserEmail('');
+      setIsEmailManuallyEdited(false);
       fetchUsers(userPage);
     }
   };
@@ -241,9 +249,20 @@ export default function SuperAdmin() {
                         </button>
                         <button onClick={async () => {
                           if (window.confirm(`WARNING: Are you sure you want to completely delete "${u.full_name || u.first_name}"? This will wipe their account forever.`)) {
-                            const { error } = await supabase.rpc('admin_delete_user', { target_user_id: u.id });
-                            if (error) alert(error.message);
-                            else fetchUsers(userPage);
+                            try {
+                              console.log("Attempting to delete user:", u.id);
+                              const { data, error } = await supabase.rpc('admin_delete_user', { target_user_id: u.id });
+                              console.log("Delete response:", { data, error });
+                              if (error) {
+                                alert(`Failed to delete: ${error.message || JSON.stringify(error)}`);
+                              } else {
+                                alert("User successfully deleted!");
+                                fetchUsers(userPage);
+                              }
+                            } catch (err) {
+                              console.error("Delete exception:", err);
+                              alert(`Exception occurred: ${err.message}`);
+                            }
                           }
                         }} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.85rem' }}>
                           Delete
@@ -306,11 +325,36 @@ export default function SuperAdmin() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label>Full Name</label>
-              <input name="first_name" required className="form-input" placeholder="John Doe" />
+              <input 
+                name="first_name" 
+                required 
+                className="form-input" 
+                placeholder="John Doe" 
+                value={newUserName}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setNewUserName(val);
+                  if (!isEmailManuallyEdited) {
+                    const cleanName = val.trim().toLowerCase().replace(/[^a-z0-9]/g, '.');
+                    setNewUserEmail(cleanName ? `${cleanName}@startupos.com` : '');
+                  }
+                }}
+              />
             </div>
             <div className="form-group">
               <label>Email Address</label>
-              <input name="email" type="email" required className="form-input" placeholder="john@example.com" />
+              <input 
+                name="email" 
+                type="email" 
+                required 
+                className="form-input" 
+                placeholder="john@example.com"
+                value={newUserEmail}
+                onChange={(e) => {
+                  setNewUserEmail(e.target.value);
+                  setIsEmailManuallyEdited(true);
+                }}
+              />
             </div>
           </div>
           <div className="form-group">
