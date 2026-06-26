@@ -173,6 +173,13 @@ function App() {
             <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
               System
             </div>
+            <button 
+              onClick={toggleTheme} 
+              className="nav-link" 
+              style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+            >
+              {theme === 'dark' ? <><Sun size={18} /> Light Mode</> : <><Moon size={18} /> Dark Mode</>}
+            </button>
             <NavLink to="/settings" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Settings size={18} /> Settings</NavLink>
             <button 
               onClick={handleLogout} 
