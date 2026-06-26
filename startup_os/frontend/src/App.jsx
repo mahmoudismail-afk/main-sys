@@ -50,6 +50,7 @@ function App() {
     document.body.className = theme;
   }, [theme]);
 
+  useEffect(() => {
     // Check active sessions and sets the user
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       // Refresh session automatically if app_metadata is missing our new fields, to pull the latest JWT claims
