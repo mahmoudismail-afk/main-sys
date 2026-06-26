@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Target, BookOpen, Lightbulb } from 'lucide-react';
+import { Target, BookOpen, Lightbulb, Pencil } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function AgencyHQ() {
@@ -10,6 +10,7 @@ export default function AgencyHQ() {
 
   const [isOkrModalOpen, setOkrModalOpen] = useState(false);
   const [isDecisionModalOpen, setDecisionModalOpen] = useState(false);
+  const [editOkr, setEditOkr] = useState(null);
 
   const fetchOkrs = async () => {
     const { data, error } = await supabase.from('okrs').select('*').order('created_at', { ascending: false }).limit(5);
@@ -46,7 +47,17 @@ export default function AgencyHQ() {
     const quarter = formData.get('quarter');
 
     // We pass `name: title` to satisfy legacy database schemas that had a strict 'name' column instead of 'title'
-    const { error } = await supabase.from('okrs').insert([{ name: title, title, description, type, status, quarter }]);
+    const payload = { name: title, title, description, type, status, quarter };
+    
+    let error;
+    if (editOkr) {
+      const { error: updateError } = await supabase.from('okrs').update(payload).eq('id', editOkr.id);
+      error = updateError;
+    } else {
+      const { error: insertError } = await supabase.from('okrs').insert([payload]);
+      error = insertError;
+    }
+
     if (error) {
       alert(`Error saving OKR: ${error.message}`);
     } else {
@@ -95,11 +106,17 @@ export default function AgencyHQ() {
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     {okr.quarter && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', padding: '0.1rem 0.4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>{okr.quarter}</span>}
                     <span className={`badge ${okr.status === 'completed' ? 'completed' : 'pending'}`}>{okr.status}</span>
+                    <button 
+                      onClick={() => { setEditOkr(okr); setOkrModalOpen(true); }} 
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '0', display: 'flex' }}
+                    >
+                      <Pencil size={14} />
+                    </button>
                   </div>
                 </div>
               ))
             )}
-            <button className="primary-btn" style={{ width: '100%', marginTop: '1rem' }} onClick={() => setOkrModalOpen(true)}>+ New Objective</button>
+            <button className="primary-btn" style={{ width: '100%', marginTop: '1rem' }} onClick={() => { setEditOkr(null); setOkrModalOpen(true); }}>+ New Objective</button>
           </div>
 
           <div className="glass-panel">
@@ -120,30 +137,30 @@ export default function AgencyHQ() {
         </div>
       )}
 
-      <Modal isOpen={isOkrModalOpen} onClose={() => setOkrModalOpen(false)} title="New Objective">
-        <form onSubmit={handleOkrSubmit}>
+      <Modal isOpen={isOkrModalOpen} onClose={() => setOkrModalOpen(false)} title={editOkr ? "Edit Objective" : "New Objective"}>
+        <form onSubmit={handleOkrSubmit} key={editOkr ? editOkr.id : 'new'}>
           <div className="form-group">
             <label>Title</label>
-            <input name="title" required className="form-input" placeholder="E.g., Increase Q3 Revenue by 20%" />
+            <input name="title" required className="form-input" placeholder="E.g., Increase Q3 Revenue by 20%" defaultValue={editOkr?.title || editOkr?.name} />
           </div>
           <div className="form-group">
             <label>Quarter</label>
-            <input name="quarter" required className="form-input" placeholder="E.g., Q3 2026" defaultValue={`Q${Math.floor((new Date().getMonth() + 3) / 3)} ${new Date().getFullYear()}`} />
+            <input name="quarter" required className="form-input" placeholder="E.g., Q3 2026" defaultValue={editOkr?.quarter || `Q${Math.floor((new Date().getMonth() + 3) / 3)} ${new Date().getFullYear()}`} />
           </div>
           <div className="form-group">
             <label>Description</label>
-            <textarea name="description" className="form-textarea" placeholder="Brief description of the objective..." />
+            <textarea name="description" className="form-textarea" placeholder="Brief description of the objective..." defaultValue={editOkr?.description} />
           </div>
           <div className="form-group">
             <label>Type</label>
-            <select name="type" className="form-select">
+            <select name="type" className="form-select" defaultValue={editOkr?.type || 'objective'}>
               <option value="objective">Objective</option>
               <option value="key_result">Key Result</option>
             </select>
           </div>
           <div className="form-group">
             <label>Status</label>
-            <select name="status" className="form-select">
+            <select name="status" className="form-select" defaultValue={editOkr?.status || 'not_started'}>
               <option value="not_started">Not Started</option>
               <option value="in_progress">In Progress</option>
               <option value="completed">Completed</option>
@@ -151,7 +168,7 @@ export default function AgencyHQ() {
           </div>
           <div className="form-actions">
             <button type="button" className="btn-secondary" onClick={() => setOkrModalOpen(false)}>Cancel</button>
-            <button type="submit" className="primary-btn">Save Objective</button>
+            <button type="submit" className="primary-btn">{editOkr ? "Save Changes" : "Save Objective"}</button>
           </div>
         </form>
       </Modal>

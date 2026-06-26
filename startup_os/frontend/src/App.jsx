@@ -22,12 +22,14 @@ import Inventory from './pages/Inventory';
 import Engagements from './pages/Engagements';
 import Payroll from './pages/Payroll';
 import MessageCenter from './pages/MessageCenter';
+import Debts from './pages/Debts';
+import SuperAdmin from './pages/SuperAdmin';
 
 import { 
   Target, Users, Server, DollarSign, BarChart2, LayoutDashboard, 
   Sun, Moon, Users2, FileText, CreditCard, Receipt, 
   PieChart, Briefcase, CheckSquare, Calendar, Bell, 
-  Landmark, PackageOpen, Settings, LogOut, MessageSquare, Menu, X
+  Landmark, PackageOpen, Settings, LogOut, MessageSquare, Menu, X, ShieldAlert
 } from 'lucide-react';
 
 // Placeholder components for the new granular routes
@@ -48,10 +50,15 @@ function App() {
     document.body.className = theme;
   }, [theme]);
 
-  useEffect(() => {
     // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // Refresh session automatically if app_metadata is missing our new fields, to pull the latest JWT claims
+      if (session && !session.user.app_metadata?.role) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        setSession(refreshed.session);
+      } else {
+        setSession(session);
+      }
       setIsInitializing(false);
     });
 
@@ -135,6 +142,7 @@ function App() {
           <NavLink to="/invoices" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><FileText size={18} /> Invoices</NavLink>
           <NavLink to="/payments" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><CreditCard size={18} /> Payments</NavLink>
           <NavLink to="/expenses" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Receipt size={18} /> Expenses</NavLink>
+          <NavLink to="/debts" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><DollarSign size={18} /> Debt Tracking</NavLink>
           <NavLink to="/reports" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><BarChart2 size={18} /> Monthly Report</NavLink>
           <NavLink to="/profitability" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><PieChart size={18} /> Client Profitability</NavLink>
           <NavLink to="/payroll" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><Users size={18} /> Payroll & Dividends</NavLink>
@@ -151,6 +159,16 @@ function App() {
           <NavLink to="/inventory" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}><PackageOpen size={18} /> Inventory</NavLink>
 
           <div style={{ marginTop: 'auto', paddingTop: '2rem' }}>
+            {session?.user?.app_metadata?.role === 'super_admin' && (
+              <>
+                <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: '#ef4444', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
+                  Global Admin
+                </div>
+                <NavLink to="/admin" onClick={closeMobileMenu} className={({ isActive }) => isActive ? "nav-link active" : "nav-link"} style={({isActive}) => isActive ? { color: '#ef4444'} : {}}><ShieldAlert size={18} /> Tenant Management</NavLink>
+                <div style={{ margin: '1rem 0', borderTop: '1px solid rgba(255,255,255,0.1)' }}></div>
+              </>
+            )}
+
             <div style={{ padding: '0 1rem', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 700, letterSpacing: '1px' }}>
               System
             </div>
@@ -179,6 +197,7 @@ function App() {
             <Route path="/invoices" element={<Invoices />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/expenses" element={<Expenses />} />
+            <Route path="/debts" element={<Debts />} />
             <Route path="/reports" element={<Analytics />} />
             <Route path="/profitability" element={<Profitability />} />
             <Route path="/payroll" element={<Payroll />} />
@@ -192,6 +211,9 @@ function App() {
             <Route path="/inventory" element={<Inventory />} />
             
             <Route path="/settings" element={<SettingsPage />} />
+            {session?.user?.app_metadata?.role === 'super_admin' && (
+              <Route path="/admin" element={<SuperAdmin />} />
+            )}
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
