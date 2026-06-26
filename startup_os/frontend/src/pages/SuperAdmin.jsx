@@ -270,8 +270,21 @@ export default function SuperAdmin() {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {orgStaff.map(s => (
                 <li key={s.id} style={{ padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 500 }}>{s.first_name || 'Unnamed'}</span>
-                  <span className="badge" style={{ background: 'rgba(255,255,255,0.1)' }}>{s.role}</span>
+                  <span style={{ fontWeight: 500 }}>{s.full_name || s.first_name || 'Unnamed User'}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span style={{ color: s.role === 'super_admin' ? '#ef4444' : 'var(--text-primary)', fontSize: '0.85rem' }}>{s.role}</span>
+                    <button 
+                      onClick={() => {
+                        // The Edit Access modal needs the 'organizations' property to display "Current Org"
+                        setSelectedUser({ ...s, organizations: selectedOrg });
+                        setIsStaffModalOpen(false);
+                        setIsMoveUserModalOpen(true);
+                      }}
+                      style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-primary)', cursor: 'pointer', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem' }}
+                    >
+                      Edit Access
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
