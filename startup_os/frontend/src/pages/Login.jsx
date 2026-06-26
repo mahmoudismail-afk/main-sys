@@ -22,7 +22,8 @@ export default function Login() {
     });
 
     if (error) {
-      setError(error.message);
+      console.error("Login Error:", error);
+      setError(error.message || JSON.stringify(error));
     }
     setLoading(false);
   };
