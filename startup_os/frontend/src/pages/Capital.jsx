@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Landmark, PlusCircle, Edit2, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Capital() {
+  const { orgId } = useOrg();
   const [milestones, setMilestones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,9 +35,10 @@ export default function Capital() {
     const formData = new FormData(e.target);
     const payload = {
       title: formData.get('title'),
+      organization_id: orgId,
       target_amount: formData.get('target_amount'),
       raised_amount: formData.get('raised_amount') || 0,
-      target_date: formData.get('target_date'),
+      target_date: formData.get('target_date') || null,
       status: formData.get('status') || 'active'
     };
 

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
-import { CreditCard, PlusCircle } from 'lucide-react';
+import { CreditCard, PlusCircle, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Payments() {
+  const { orgId } = useOrg();
   const [payments, setPayments] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [clients, setClients] = useState([]);
@@ -50,6 +52,7 @@ export default function Payments() {
 
     const payload = {
       amount: formData.get('amount'),
+      organization_id: orgId,
       payment_method: formData.get('payment_method'),
       payment_date: formData.get('payment_date'),
       reference_id: formData.get('reference_id') || null,
@@ -70,6 +73,16 @@ export default function Payments() {
 
     setIsModalOpen(false);
     fetchData();
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this payment?')) return;
+    const { error } = await supabase.from('payments').delete().eq('id', id);
+    if (error) {
+      alert(`Error deleting payment: ${error.message}`);
+    } else {
+      fetchData();
+    }
   };
 
   return (
@@ -94,6 +107,7 @@ export default function Payments() {
                   <th>Method</th>
                   <th>Reference</th>
                   <th>Invoice Link</th>
+                  <th style={{ width: '80px', textAlign: 'center' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -105,6 +119,11 @@ export default function Payments() {
                     <td><span className="badge">{p.payment_method}</span></td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{p.reference_id || '--'}</td>
                     <td>{p.invoice_id ? 'Linked' : '--'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button onClick={() => handleDelete(p.id)} title="Delete Payment" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

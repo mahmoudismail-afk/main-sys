@@ -130,15 +130,43 @@ export default function SuperAdmin() {
       first_name: formData.get('first_name')
     };
 
-    const { error } = await supabase.rpc('admin_create_user', payload);
-    if (error) alert(`Error creating user: ${error.message}`);
-    else {
+    try {
+      // 1. Create a temporary client to sign up the user without logging the admin out
+      const { createClient } = await import('@supabase/supabase-js');
+      const { supabaseUrl, supabaseKey } = await import('../lib/supabase.js');
+      const tempClient = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
+
+      const { data: signUpData, error: signUpError } = await tempClient.auth.signUp({
+        email: payload.email,
+        password: payload.password,
+      });
+
+      if (signUpError) {
+        if (!signUpError.message.includes('already registered')) {
+          throw signUpError;
+        }
+      }
+
+      // 2. Call RPC to verify email and assign profile
+      const { error: rpcError } = await supabase.rpc('admin_verify_and_assign_user', {
+        target_email: payload.email,
+        org_id: payload.org_id,
+        user_role: payload.user_role,
+        first_name: payload.first_name
+      });
+
+      if (rpcError) throw rpcError;
+
       alert("User created successfully!");
       setIsUserModalOpen(false);
       setNewUserName('');
       setNewUserEmail('');
       setIsEmailManuallyEdited(false);
       fetchUsers(userPage);
+    } catch (err) {
+      console.error("Full error object:", err);
+      const errorText = err?.message || err?.msg || err?.error_description || JSON.stringify(err);
+      alert(`Error creating user: ${errorText}. (Check browser console for full details)`);
     }
   };
 
@@ -230,6 +258,7 @@ export default function SuperAdmin() {
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                     <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Name</th>
+                    <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Email</th>
                     <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Organization</th>
                     <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Role</th>
                     <th style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)', fontWeight: 500, textAlign: 'right' }}>Actions</th>
@@ -239,6 +268,7 @@ export default function SuperAdmin() {
                   {users.map(u => (
                     <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                       <td style={{ padding: '1rem 1.5rem', fontWeight: 500 }}>{u.first_name || u.full_name || 'Unnamed'}</td>
+                      <td style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)' }}>{u.email || 'Hidden (Auth)'}</td>
                       <td style={{ padding: '1rem 1.5rem', color: 'var(--text-secondary)' }}>{u.organizations?.name || 'None'}</td>
                       <td style={{ padding: '1rem 1.5rem' }}>
                         <span style={{ color: u.role === 'super_admin' ? '#ef4444' : 'var(--text-primary)' }}>{u.role}</span>

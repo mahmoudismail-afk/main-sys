@@ -60,7 +60,7 @@ export default function ExecutiveDashboard() {
   }, []);
 
   // Compute KPIs
-  const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((sum, i) => sum + Number(i.amount || 0), 0);
+  const totalRevenue = paymentsList.reduce((sum, p) => sum + Number(p.amount || 0), 0);
   const outstandingAR = invoices.filter(i => i.status === 'sent' || i.status === 'overdue').reduce((sum, i) => sum + Number(i.amount || 0), 0);
   
   const baseExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);

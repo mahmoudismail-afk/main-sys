@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Landmark, Plus, Edit, Trash2, DollarSign, PlusCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Debts() {
+  const { orgId } = useOrg();
   const [debts, setDebts] = useState([]);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,8 +41,9 @@ export default function Debts() {
     const payload = {
       debtor_name: formData.get('debtor_name'),
       amount: parseFloat(formData.get('amount')),
+      organization_id: orgId,
       currency_code: formData.get('currency_code') || 'USD',
-      due_date: formData.get('due_date'),
+      due_date: formData.get('due_date') || null,
       status: formData.get('status'),
       notes: formData.get('notes'),
     };

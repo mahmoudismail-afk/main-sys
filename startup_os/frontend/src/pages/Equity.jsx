@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Briefcase, PlusCircle, Pencil, Landmark, ShieldAlert, ArrowRightCircle, Download, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Equity() {
+  const { orgId } = useOrg();
   const [equity, setEquity] = useState([]);
   
   // Treasury State
@@ -100,6 +102,7 @@ export default function Equity() {
     const payload = {
       stakeholder_name: formData.get('stakeholder_name'),
       role: formData.get('role'),
+      organization_id: orgId,
       equity_percentage: formData.get('equity_percentage'),
       shares_held: formData.get('shares_held') ? parseInt(formData.get('shares_held')) : null
     };
@@ -141,7 +144,8 @@ export default function Equity() {
     const payloads = sweepSplits.map(s => ({
       stakeholder_id: s.stakeholder_id,
       amount: s.amount,
-      type: 'allocation', // <--- This credits the wallet instead of physical payout
+      organization_id: orgId,
+      type: 'allocation',
       status: 'allocated',
       date: new Date().toISOString().split('T')[0]
     }));
@@ -162,7 +166,8 @@ export default function Equity() {
     const payload = {
       stakeholder_id: withdrawStakeholder.id,
       amount: amount,
-      type: 'payout', // <--- This reduces the wallet and actual bank cash
+      organization_id: orgId,
+      type: 'payout',
       status: 'distributed',
       date: formData.get('date')
     };

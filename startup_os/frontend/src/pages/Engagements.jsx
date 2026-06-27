@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { FileText, PlusCircle, Settings, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Engagements() {
+  const { orgId } = useOrg();
   const [engagements, setEngagements] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +45,7 @@ export default function Engagements() {
     const payload = {
       client_id: formData.get('client_id'),
       name: formData.get('name'),
+      organization_id: orgId,
       contract_value: formData.get('contract_value'),
       setup_fee: setupFee ? parseFloat(setupFee) : null,
       start_date: formData.get('start_date') || null,
@@ -50,7 +53,7 @@ export default function Engagements() {
       status: formData.get('status') || 'active',
       auto_invoice: isAutoInvoice,
       billing_cycle: isAutoInvoice ? formData.get('billing_cycle') : null,
-      next_invoice_date: isAutoInvoice ? formData.get('next_invoice_date') : null
+      next_invoice_date: isAutoInvoice ? (formData.get('next_invoice_date') || null) : null
     };
 
     let data, error;
@@ -71,9 +74,12 @@ export default function Engagements() {
       // Only generate initial invoices if this is a brand new engagement
       if (!editItem && data && data.length > 0) {
         const today = new Date();
-        const due = new Date(today);
-        due.setDate(due.getDate() + 14); // Net 14 terms
+        const defaultDue = new Date(today);
+        defaultDue.setDate(defaultDue.getDate() + 14); // Net 14 terms
         
+        const nextInvoiceDate = formData.get('next_invoice_date');
+        const dueDateToUse = nextInvoiceDate ? nextInvoiceDate : defaultDue.toISOString().split('T')[0];
+
         const invoicePromises = [];
 
         // 1. Invoice the Setup Fee if it exists
@@ -83,23 +89,47 @@ export default function Engagements() {
               client_id: data[0].client_id,
               engagement_id: data[0].id,
               amount: parseFloat(setupFee),
+              organization_id: orgId,
               status: 'draft',
-              due_date: due.toISOString()
+              due_date: dueDateToUse
             }])
           );
         }
 
         // 2. Invoice the Contract Value if auto-invoice is turned on
         if (isAutoInvoice && data[0].contract_value) {
-          invoicePromises.push(
-            supabase.from('invoices').insert([{
-              client_id: data[0].client_id,
-              engagement_id: data[0].id,
-              amount: parseFloat(data[0].contract_value),
-              status: 'draft',
-              due_date: due.toISOString()
-            }])
-          );
+          const cycle = formData.get('billing_cycle');
+          let numberOfInvoices = 1;
+          if (cycle === 'monthly') numberOfInvoices = 12;
+          else if (cycle === 'weekly') numberOfInvoices = 52;
+          else if (cycle === 'semi-annually') numberOfInvoices = 2;
+          else if (cycle === 'annually') numberOfInvoices = 1;
+
+          let currentDue = new Date(dueDateToUse);
+
+          for (let i = 0; i < numberOfInvoices; i++) {
+            invoicePromises.push(
+              supabase.from('invoices').insert([{
+                client_id: data[0].client_id,
+                engagement_id: data[0].id,
+                amount: parseFloat(data[0].contract_value),
+                organization_id: orgId,
+                status: 'draft',
+                due_date: currentDue.toISOString().split('T')[0]
+              }])
+            );
+
+            // Increment date for the next invoice
+            if (cycle === 'monthly') {
+              currentDue.setMonth(currentDue.getMonth() + 1);
+            } else if (cycle === 'weekly') {
+              currentDue.setDate(currentDue.getDate() + 7);
+            } else if (cycle === 'semi-annually') {
+              currentDue.setMonth(currentDue.getMonth() + 6);
+            } else if (cycle === 'annually') {
+              currentDue.setFullYear(currentDue.getFullYear() + 1);
+            }
+          }
         }
 
         if (invoicePromises.length > 0) {

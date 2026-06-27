@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Users2, PlusCircle, Pencil } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Leads() {
+  const { orgId } = useOrg();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,6 +33,7 @@ export default function Leads() {
     const payload = {
       client_name: formData.get('client_name'),
       stage: formData.get('stage'),
+      organization_id: orgId,
       value: formData.get('value') || 0,
       close_date: formData.get('close_date') || null
     };

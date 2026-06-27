@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Target, BookOpen, Lightbulb, Pencil } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function AgencyHQ() {
+  const { orgId } = useOrg();
   const [okrs, setOkrs] = useState([]);
   const [decisions, setDecisions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ export default function AgencyHQ() {
     const quarter = formData.get('quarter');
 
     // We pass `name: title` to satisfy legacy database schemas that had a strict 'name' column instead of 'title'
-    const payload = { name: title, title, description, type, status, quarter };
+    const payload = { name: title, title, description, type, status, quarter, organization_id: orgId };
     
     let error;
     if (editOkr) {
@@ -74,7 +76,7 @@ export default function AgencyHQ() {
     const rationale = formData.get('rationale');
     const outcome = formData.get('outcome');
 
-    const { error } = await supabase.from('decisions_log').insert([{ title, context, rationale, outcome }]);
+    const { error } = await supabase.from('decisions_log').insert([{ title, context, rationale, outcome, organization_id: orgId }]);
     if (error) {
       alert(`Error saving decision: ${error.message}`);
     } else {

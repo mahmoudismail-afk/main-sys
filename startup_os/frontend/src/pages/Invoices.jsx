@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
-import { FileText, PlusCircle } from 'lucide-react';
+import { FileText, PlusCircle, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Invoices() {
+  const { orgId } = useOrg();
   const [invoices, setInvoices] = useState([]);
   const [engagementsList, setEngagementsList] = useState([]);
   const [clientsList, setClientsList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
 
   const fetchData = async () => {
     setLoading(true);
@@ -52,7 +58,7 @@ export default function Invoices() {
     }
 
     if (client_id) {
-      const payload = { client_id, amount, status, due_date };
+      const payload = { client_id, amount, status, due_date, organization_id: orgId };
       if (engagement_id) payload.engagement_id = engagement_id;
       if (issued_at) payload.issued_at = issued_at;
 
@@ -66,6 +72,7 @@ export default function Invoices() {
             invoice_id: data[0].id,
             client_id: data[0].client_id,
             amount: data[0].amount,
+            organization_id: orgId,
             payment_method: 'Main Cash',
             payment_date: data[0].due_date || data[0].issued_at || new Date().toISOString().split('T')[0]
           }]);
@@ -91,6 +98,7 @@ export default function Invoices() {
             invoice_id: id,
             client_id: invoice.client_id,
             amount: invoice.amount,
+            organization_id: orgId,
             payment_method: 'Main Cash',
             payment_date: invoice.due_date ? new Date(invoice.due_date).toISOString().split('T')[0] : (invoice.issued_at ? new Date(invoice.issued_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
           }]);
@@ -105,6 +113,14 @@ export default function Invoices() {
     fetchData();
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to delete this invoice? Only its associated payments will be removed. Other invoices and payments will not be affected.")) {
+      const { error } = await supabase.from('invoices').delete().eq('id', id);
+      if (error) alert(`Error deleting invoice: ${error.message}`);
+      else fetchData();
+    }
+  };
+
   const getStatusBadge = (status) => {
     switch(status) {
       case 'paid': return 'completed'; // Green
@@ -113,6 +129,13 @@ export default function Invoices() {
       default: return 'pending'; // Gray
     }
   };
+
+  const filteredInvoices = invoices.filter(inv => {
+    if (selectedMonth === 'all') return true;
+    const dateToUse = inv.due_date || inv.issued_at;
+    if (!dateToUse) return false;
+    return dateToUse.startsWith(selectedMonth);
+  });
 
   return (
     <div>
@@ -126,7 +149,26 @@ export default function Invoices() {
 
       {loading ? <div className="loader">Loading Invoices...</div> : (
         <div className="glass-panel">
-          {invoices.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No invoices created yet.</p> : (
+          
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', alignItems: 'center' }}>
+            <label style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Filter by Month:</label>
+            <input 
+              type="month" 
+              className="form-input" 
+              style={{ width: 'auto', padding: '0.35rem 0.75rem', fontSize: '0.9rem' }}
+              value={selectedMonth !== 'all' ? selectedMonth : ''}
+              onChange={(e) => setSelectedMonth(e.target.value || 'all')}
+            />
+            <button 
+              className="btn-secondary" 
+              style={{ padding: '0.35rem 0.75rem', fontSize: '0.9rem' }}
+              onClick={() => setSelectedMonth('all')}
+            >
+              Show All Time
+            </button>
+          </div>
+
+          {filteredInvoices.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No invoices found for this period.</p> : (
             <table className="data-table">
               <thead>
                 <tr>
@@ -139,7 +181,7 @@ export default function Invoices() {
                 </tr>
               </thead>
               <tbody>
-                {invoices.map(inv => (
+                {filteredInvoices.map(inv => (
                   <tr key={inv.id}>
                     <td style={{ fontWeight: 600 }}>{inv.clients?.name || 'Unknown'}</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{inv.engagements?.name || 'Manual'}</td>
@@ -159,17 +201,22 @@ export default function Invoices() {
                       </span>
                     </td>
                     <td>
-                      <select 
-                        className="form-select" 
-                        style={{ padding: '0.25rem', fontSize: '0.75rem', width: 'auto' }}
-                        value={inv.status}
-                        onChange={(e) => updateStatus(inv.id, e.target.value)}
-                      >
-                        <option value="draft">Draft</option>
-                        <option value="sent">Sent</option>
-                        <option value="paid">Paid</option>
-                        <option value="overdue">Overdue</option>
-                      </select>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <select 
+                          className="form-select" 
+                          style={{ padding: '0.25rem', fontSize: '0.75rem', width: 'auto' }}
+                          value={inv.status}
+                          onChange={(e) => updateStatus(inv.id, e.target.value)}
+                        >
+                          <option value="draft">Draft</option>
+                          <option value="sent">Sent</option>
+                          <option value="paid">Paid</option>
+                          <option value="overdue">Overdue</option>
+                        </select>
+                        <button onClick={() => handleDelete(inv.id)} title="Delete Invoice" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center' }}>
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -1,18 +1,28 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Receipt, PlusCircle, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Expenses() {
+  const { orgId } = useOrg();
   const [expenses, setExpenses] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase.from('expenses').select('*').order('date', { ascending: false });
-      setExpenses(data || []);
+      const [
+        { data: expensesData },
+        { data: clientsData }
+      ] = await Promise.all([
+        supabase.from('expenses').select('*, clients(name)').order('date', { ascending: false }),
+        supabase.from('clients').select('id, name').order('name')
+      ]);
+      setExpenses(expensesData || []);
+      setClients(clientsData || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -31,11 +41,13 @@ export default function Expenses() {
       description: formData.get('description'),
       name: formData.get('description'), // Fallback for databases that enforce a NOT NULL 'name' column
       amount: formData.get('amount'),
+      organization_id: orgId,
       category: formData.get('category'),
       date: formData.get('date'),
       end_date: formData.get('end_date') || null,
       is_recurring: formData.get('is_recurring') === 'on',
-      billing_cycle: formData.get('is_recurring') === 'on' ? formData.get('billing_cycle') : null
+      billing_cycle: formData.get('is_recurring') === 'on' ? formData.get('billing_cycle') : null,
+      client_id: formData.get('client_id') || null
     };
 
     const { error } = await supabase.from('expenses').insert([payload]);
@@ -73,6 +85,7 @@ export default function Expenses() {
                 <tr>
                   <th>Start Date</th>
                   <th>End Date</th>
+                  <th>Client</th>
                   <th>Description</th>
                   <th>Category</th>
                   <th>Amount</th>
@@ -84,6 +97,7 @@ export default function Expenses() {
                   <tr key={exp.id}>
                     <td>{new Date(exp.date).toLocaleDateString()}</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{exp.end_date ? new Date(exp.end_date).toLocaleDateString() : 'Ongoing'}</td>
+                    <td>{exp.clients?.name || <span style={{ color: 'var(--text-secondary)' }}>--</span>}</td>
                     <td style={{ fontWeight: 500 }}>{exp.description}</td>
                     <td><span className="badge">{exp.category}</span></td>
                     <td style={{ color: '#ef4444', fontWeight: 600 }}>${Number(exp.amount).toLocaleString()} {exp.is_recurring && <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>/ {exp.billing_cycle}</span>}</td>
@@ -105,6 +119,15 @@ export default function Expenses() {
           <div className="form-group">
             <label>Description (Vendor / Item)</label>
             <input name="description" required className="form-input" placeholder="E.g., AWS Hosting, Slack Seats" />
+          </div>
+          <div className="form-group">
+            <label>Client (Optional - Dedicate expense to a client)</label>
+            <select name="client_id" className="form-select">
+              <option value="">None / General Expense</option>
+              {clients.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">

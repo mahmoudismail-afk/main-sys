@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { MessageSquare, PlusCircle, Send, Hash, User, Pencil } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function MessageCenter() {
+  const { orgId } = useOrg();
   const [threads, setThreads] = useState([]);
   const [activeThread, setActiveThread] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -71,6 +73,7 @@ export default function MessageCenter() {
 
     const { data, error } = await supabase.from('message_threads').insert([{
       title,
+      organization_id: orgId,
       created_by: session?.user?.id
     }]).select();
 
@@ -139,6 +142,7 @@ export default function MessageCenter() {
 
     const payload = {
       thread_id: activeThread.id,
+      organization_id: orgId,
       sender_id: session?.user?.id,
       sender_name: displayName,
       content: newMessage.trim()

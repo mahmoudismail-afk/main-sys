@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Users, Banknote, PlusCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Payroll() {
+  const { orgId } = useOrg();
   const [payroll, setPayroll] = useState([]);
   const [dividends, setDividends] = useState([]);
   const [stakeholders, setStakeholders] = useState([]);
@@ -50,6 +52,7 @@ export default function Payroll() {
     const payload = {
       employee_name: formData.get('employee_name'),
       role: formData.get('role'),
+      organization_id: orgId,
       amount: formData.get('amount'),
       type: formData.get('type'),
       date: formData.get('date')
@@ -70,6 +73,7 @@ export default function Payroll() {
     const payload = {
       stakeholder_id: formData.get('stakeholder_id'),
       amount: formData.get('amount'),
+      organization_id: orgId,
       type: formData.get('type'),
       date: formData.get('date'),
       status: formData.get('status')

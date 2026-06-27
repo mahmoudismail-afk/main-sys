@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { Users, Briefcase, FileText, ExternalLink, UserPlus } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function CRM() {
+  const { orgId } = useOrg();
   const [clients, setClients] = useState([]);
   const [leads, setLeads] = useState([]);
   const [engagements, setEngagements] = useState([]);
@@ -53,6 +55,7 @@ export default function CRM() {
     const payload = {
       name: formData.get('name'),
       status: formData.get('status'),
+      organization_id: orgId,
       phone: formData.get('phone') || null,
       notes: formData.get('notes') || null,
       gdrive_folder_id: formData.get('gdrive_folder_id') || null,
@@ -78,7 +81,7 @@ export default function CRM() {
     const value = formData.get('value');
     const close_date = formData.get('close_date') || null;
 
-    const { error } = await supabase.from('leads_pipeline').insert([{ client_name, stage, value, close_date }]);
+    const { error } = await supabase.from('leads_pipeline').insert([{ client_name, stage, value, close_date, organization_id: orgId }]);
     if (error) {
       alert(`Error saving lead: ${error.message}`);
     } else {

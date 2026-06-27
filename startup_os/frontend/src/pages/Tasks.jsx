@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useOrg } from '../lib/useOrg';
 import { supabase } from '../lib/supabase';
 import { CheckSquare, PlusCircle } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function Tasks() {
+  const { orgId } = useOrg();
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [engagements, setEngagements] = useState([]);
@@ -48,6 +50,7 @@ export default function Tasks() {
       title: formData.get('title'),
       priority: formData.get('priority'),
       status: formData.get('status'),
+      organization_id: orgId,
       due_date: formData.get('due_date') || null,
       project_id: formData.get('project_id') || null,
       engagement_id: formData.get('engagement_id') || null,
